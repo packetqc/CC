@@ -1,2 +1,0 @@
-# CC
-Claude Code AI
