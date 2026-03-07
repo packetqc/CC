@@ -87,6 +87,9 @@ Pour construire les résultats par défaut : pour chaque knowledge dans `methodo
    - Via git direct : `git fetch origin main && git checkout main && git merge <branche> && git push origin main && git checkout <branche>`
    - Si toutes échouent : afficher "Note: le merge vers main doit être fait manuellement."
 6. Afficher la grille de résultats
+7. Exécuter `compilation_metriques(resultats)` depuis `knowledge_skills.py`
+8. Exécuter `compilation_temps(resultats)` depuis `knowledge_skills.py`
+9. Exécuter `sauvegarde(resultats)` depuis `knowledge_skills.py`
 Note : le fichier `knowledge_resultats.json` reste sur la branche de travail avec les résultats. Il sera nettoyé au démarrage de la prochaine session.
 
 ### Configuration des actions
@@ -315,12 +318,12 @@ Exemple avec 5 knowledge dont certains ont des nombres de questions différents 
 - **Si complet** (aucun `"--"`) : afficher `message_fin_complet` de `methodology-knowledge.md`
 - **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
 
-**Fonctions post-grille :** Après l'affichage de la grille et du message de fin, exécuter dans l'ordre ces 3 fonctions (définies dans `knowledge_skills.py`) :
+**Fonctions post-grille :** Ces 3 fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-8-9 ci-dessus, **pas** par `AfficherGrilleSkill`. Elles sont découplées de la grille pour permettre une utilisation indépendante :
 1. `compilation_metriques(resultats)` — Compile les métriques du knowledge
 2. `compilation_temps(resultats)` — Compile les données de temps
 3. `sauvegarde(resultats)` — Sauvegarde les résultats
 
-Ces fonctions sont **toujours** exécutées après la grille, que le quiz soit complet ou non.
+Ces fonctions sont **toujours** exécutées après la grille, que le quiz soit complet ou non. L'appel se fait via `from knowledge_skills import compilation_metriques, compilation_temps, sauvegarde`.
 
 ### Important
 

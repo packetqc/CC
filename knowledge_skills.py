@@ -245,11 +245,6 @@ class AfficherGrilleSkill(Skill):
         message = self.message_fin_complet if complet else self.message_fin_incomplet
         print(f"\n{message}")
 
-        # Fonctions post-grille (toujours exécutées après la grille)
-        compilation_metriques(resultats)
-        compilation_temps(resultats)
-        sauvegarde(resultats)
-
 
 # =============================================================================
 # Fonctions post-grille
