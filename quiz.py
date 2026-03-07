@@ -1,24 +1,14 @@
 #!/usr/bin/env python3
 """Quiz imbriqué à 4 niveaux avec maximum 4 choix par niveau.
 
-Charge la configuration depuis quiz_config/methodologie.json.
+Charge la configuration depuis quiz_config/methodologie.md.
 """
-import json
 import subprocess
 import sys
 import os
 
-
-# =============================================================================
-# Chargement de la configuration
-# =============================================================================
-
-def charger_methodologie():
-    """Charge la méthodologie du quiz depuis le fichier JSON."""
-    chemin = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "quiz_config", "methodologie.json")
-    with open(chemin, "r", encoding="utf-8") as f:
-        return json.load(f)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from quiz_config import charger_methodologie
 
 
 def construire_actions(config):

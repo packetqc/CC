@@ -9,7 +9,7 @@ Tu dois exécuter ce quiz en utilisant l'outil AskUserQuestion. Le quiz a 3 nive
 
 ### Source de configuration
 
-La structure du quiz (questions, actions, messages) est définie dans le fichier `quiz_config/methodologie.json`. Au démarrage du skill, lire ce fichier avec l'outil Read pour obtenir :
+La structure du quiz (questions, actions, messages) est définie dans le fichier `quiz_config/methodologie.md`. Au démarrage du skill, lire ce fichier avec l'outil Read pour obtenir :
 - La liste des quiz (noms, lettres, questions)
 - Les actions associées à chaque question (fonction/programme)
 - Les messages à afficher quand l'utilisateur répond Vrai
@@ -23,7 +23,7 @@ Utiliser ces données pour construire dynamiquement les options AskUserQuestion,
 Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_resultats.json` après CHAQUE réponse de l'utilisateur. Cela garantit que les résultats survivent au compactage de session.
 
 **Format du fichier `.claude/quiz_resultats.json` :**
-Le format est construit dynamiquement à partir de `quiz_config/methodologie.json`. Exemple avec la config actuelle :
+Le format est construit dynamiquement à partir de `quiz_config/methodologie.md`. Exemple avec la config actuelle :
 ```json
 {
   "en_cours": true,
@@ -36,7 +36,7 @@ Le format est construit dynamiquement à partir de `quiz_config/methodologie.jso
   }
 }
 ```
-Pour construire les résultats par défaut : pour chaque quiz dans `methodologie.json`, créer une entrée avec le nom du quiz, et pour chaque question, initialiser à `"--"`.
+Pour construire les résultats par défaut : pour chaque quiz dans `methodologie.md`, créer une entrée avec le nom du quiz, et pour chaque question, initialiser à `"--"`.
 
 **Au démarrage du skill :**
 1. Lire `.claude/quiz_resultats.json` avec l'outil Read
@@ -66,7 +66,7 @@ Note : le fichier `quiz_resultats.json` reste sur la branche de travail avec les
 
 ### Configuration des actions
 
-Quand l'utilisateur répond **Vrai**, consulter `quiz_config/methodologie.json` pour trouver l'action et le message associés à la question courante :
+Quand l'utilisateur répond **Vrai**, consulter `quiz_config/methodologie.md` pour trouver l'action et le message associés à la question courante :
 - Chaque question dans le fichier a un champ `action_vrai` (fonction ou programme) et un champ `message_vrai`
 - Afficher le `message_vrai` de la question
 
@@ -77,7 +77,7 @@ Quand l'utilisateur répond **Passer**, enregistrer "Passer" sans action.
 
 Afficher avec AskUserQuestion (multiSelect: false) :
 - header: "Principal"
-- options: construire dynamiquement à partir des quiz dans `methodologie.json`, plus `Terminer` comme dernière option (max 4 options)
+- options: construire dynamiquement à partir des quiz dans `methodologie.md`, plus `Terminer` comme dernière option (max 4 options)
 - Chaque quiz lance le Quiz Secondaire correspondant
 - **Terminer** affiche la grille de résultats et le quiz est terminé
 - Les options restent TOUJOURS visibles (ne jamais retirer une option complétée)
@@ -87,7 +87,7 @@ Afficher avec AskUserQuestion (multiSelect: false) :
 
 Pour chaque quiz, afficher avec AskUserQuestion :
 - header: le nom du quiz (ex: "Quiz A")
-- options: construire dynamiquement à partir des questions du quiz dans `methodologie.json`, plus `Passer` comme dernière option
+- options: construire dynamiquement à partir des questions du quiz dans `methodologie.md`, plus `Passer` comme dernière option
 - Chaque question lance le Sous-quiz correspondant
 - **Passer** retourne au Quiz Principal
 - Les options restent TOUJOURS visibles
@@ -97,7 +97,7 @@ Pour chaque quiz, afficher avec AskUserQuestion :
 
 Pour chaque question, afficher avec AskUserQuestion :
 - header: l'identifiant de la question (ex: "A1")
-- options: utiliser les choix définis dans `sous_quiz.choix` de `methodologie.json`
+- options: utiliser les choix définis dans `sous_quiz.choix` de `methodologie.md`
 - Si **Vrai** : afficher le message de la fonction ou du programme associé (voir tableau ci-dessus), puis retourner au Quiz Secondaire
 - Si **Faux** ou **Passer** : enregistrer la réponse et retourner au Quiz Secondaire
 
@@ -120,7 +120,7 @@ Quand l'utilisateur choisit **Terminer**, afficher ce tableau en texte :
 Merci d'avoir complété l'étape de validation des travaux.
 ```
 
-Remplacer [val] par la réponse (Vrai, Faux, Passer) ou `--` si non répondu. Centrer les valeurs dans les colonnes de 10 caractères. Utiliser `message_fin` de `methodologie.json` comme message de fin.
+Remplacer [val] par la réponse (Vrai, Faux, Passer) ou `--` si non répondu. Centrer les valeurs dans les colonnes de 10 caractères. Utiliser `message_fin` de `methodologie.md` comme message de fin.
 
 ### Important
 

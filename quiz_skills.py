@@ -3,12 +3,14 @@
 
 Chaque composant du quiz est un Skill enregistré dans un registre.
 Les skills peuvent s'appeler entre eux par nom via le registre.
-Charge la configuration depuis quiz_config/methodologie.json.
+Charge la configuration depuis quiz_config/methodologie.md.
 """
-import json
 import subprocess
 import sys
 import os
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from quiz_config import charger_methodologie
 
 
 # =============================================================================
@@ -241,14 +243,6 @@ class AfficherGrilleSkill(Skill):
 # =============================================================================
 # Construction et lancement du quiz
 # =============================================================================
-
-def charger_methodologie():
-    """Charge la méthodologie du quiz depuis le fichier JSON."""
-    chemin = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "quiz_config", "methodologie.json")
-    with open(chemin, "r", encoding="utf-8") as f:
-        return json.load(f)
-
 
 def construire_quiz():
     """Construit et enregistre tous les skills du quiz depuis la méthodologie."""
