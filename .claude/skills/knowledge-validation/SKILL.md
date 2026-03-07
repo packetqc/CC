@@ -286,10 +286,16 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 - Quand l'utilisateur sélectionne cette option au niveau secondaire :
   1. Itérer automatiquement à travers TOUTES les autres questions du même knowledge (celles qui ne sont PAS de type `tous`)
   2. Pour chaque question : exécuter l'action associée comme si l'utilisateur avait répondu **Vrai** (afficher le message, déclencher la fonction/programme)
-  3. Enregistrer "Vrai" pour CHAQUE question exécutée dans les résultats
-  4. Enregistrer "Vrai" pour la question `tous` elle-même
-  5. Afficher le message associé à la question `tous`
-  6. Retourner au Knowledge Secondaire
+  3. Pour chaque question : enregistrer "Vrai" si l'exécution a réussi, "Faux" si elle a échoué
+  4. **Évaluer le résultat global :**
+     - **Si TOUTES les questions ont réussi (toutes Vrai)** :
+       - Enregistrer "Vrai" pour la question `tous` elle-même
+       - Afficher le message associé à la question `tous`
+       - **Retourner directement au Knowledge Principal** (pas au secondaire — tout est fait, inutile de rester)
+     - **Si AU MOINS UNE question a échoué (au moins un Faux)** :
+       - Enregistrer "Faux" pour la question `tous`
+       - Afficher un récapitulatif des résultats : pour chaque question, indiquer le statut (Vrai/Faux)
+       - **Rester au Knowledge Secondaire** pour permettre à l'utilisateur de re-sélectionner individuellement les questions en échec et de les relancer (ex: système externe indisponible, timeout, etc.)
 - Ce type d'action est **réutilisable** par n'importe quel knowledge qui souhaite offrir un raccourci "tout faire d'un coup"
 
 **Pour toutes les autres actions (fonction, programme) :**
