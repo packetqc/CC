@@ -90,6 +90,65 @@ print(result)
 <content>
 ```
 
+## Real-Time Comment Protocol — Bidirectional Technique
+
+### Principle
+
+L'issue GitHub est le canal de persistance temps réel. Chaque échange significatif entre l'utilisateur et Claude DOIT être posté sur l'issue au moment où il se produit — pas en batch à la fin.
+
+### Direction 1 — Utilisateur → Issue
+
+Quand l'utilisateur écrit un message dans la session :
+
+```
+Utilisateur écrit → Claude reçoit → Claude poste 🧑 sur l'issue (verbatim) → Claude traite
+```
+
+```python
+gh = GitHubHelper()
+gh.issue_comment_post('owner/repo', issue_num,
+    '## <img src="...vicky.png" width="20"> Martin — <desc>\n> <message verbatim>')
+```
+
+### Direction 2 — Claude → Issue AVANT affichage
+
+Quand Claude prépare une réponse significative, l'ordre est **post first, display second** :
+
+```
+Claude prépare réponse → Claude poste 🤖 sur l'issue → Claude affiche à l'écran
+```
+
+```python
+gh = GitHubHelper()
+gh.issue_comment_post('owner/repo', issue_num,
+    '## <img src="...vicky-sunglasses.png" width="20"> Claude — <desc>\n### Section\n<contenu>')
+# PUIS afficher la réponse à l'utilisateur
+```
+
+**Pourquoi cet ordre** : Si compaction ou crash survient entre la préparation et le post, le commentaire est perdu à jamais. En postant d'abord, le contenu est persisté sur GitHub indépendamment de l'état local.
+
+### Fallback — GitHub non disponible
+
+Si l'API GitHub échoue (réseau, token, rate limit) :
+
+1. **Ne pas bloquer** — la session continue normalement
+2. **Persister localement** — écrire le commentaire en attente dans le cache runtime ou un fichier local
+3. **Rattraper au prochain appel réussi** — poster les commentaires en attente quand GitHub redevient disponible
+
+### Quand poster
+
+| Échange | Direction | Obligatoire |
+|---------|-----------|-------------|
+| Demande originale utilisateur | 🧑 → issue | Oui — verbatim, gelé |
+| Instructions / ajouts utilisateur | 🧑 → issue | Oui |
+| Analyse / plan Claude | 🤖 → issue → écran | Oui |
+| Étape todo démarrée | 🤖 ⏳ → issue | Oui |
+| Étape todo complétée | 🤖 ✅ → issue | Oui |
+| Décisions significatives | 🤖 → issue → écran | Oui |
+| Raw tool output (git diff, grep) | — | Non — poster l'analyse, pas le dump |
+
+---
+
 ## Self-Check
 
 Before writing ANY code with `GitHubHelper`:
