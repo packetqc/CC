@@ -202,42 +202,72 @@ class KnowledgePrincipalSkill(Skill):
 class AfficherGrilleSkill(Skill):
     """Skill pour afficher la grille de résultats."""
 
-    def __init__(self, nom, knowledge_config, message_fin=""):
+    def __init__(self, nom, knowledge_config, message_fin_complet="", message_fin_incomplet=""):
         super().__init__(nom, "Affichage grille")
         self.knowledge_config = knowledge_config
-        self.message_fin = message_fin
+        self.message_fin_complet = message_fin_complet
+        self.message_fin_incomplet = message_fin_incomplet
 
     def executer(self, **kwargs):
         resultats = self.registre.get_resultats()
-        idx = 5
-        col = max(10, max(len(label) + 2 for label, _, _ in self.knowledge_config))
-        sep = "+" + "-" * idx + ("+" + "-" * col) * len(self.knowledge_config) + "+"
-        sep_header = "+" + "=" * idx + ("+" + "=" * col) * len(self.knowledge_config) + "+"
+        idx = 7
+        col = 10
+        max_questions = max(len(qs) for _, _, qs in self.knowledge_config)
+        sep = "+" + "-" * idx + ("+" + "-" * col) * max_questions + "+"
+        sep_header = "+" + "=" * idx + ("+" + "=" * col) * max_questions + "+"
 
         print("\n        GRILLE DE RÉSULTATS")
         print(sep)
         header = f"|{'':^{idx}}"
-        for label, _, _ in self.knowledge_config:
-            header += f"|{label:^{col}}"
+        for n in range(1, max_questions + 1):
+            header += f"|{n:^{col}}"
         header += "|"
         print(header)
         print(sep_header)
 
-        max_questions = max(len(qs) for _, _, qs in self.knowledge_config)
-        for n in range(1, max_questions + 1):
-            row = f"|{n:^{idx}}"
-            for label, lettre, _ in self.knowledge_config:
+        complet = True
+        for label, lettre, questions in self.knowledge_config:
+            row = f"|{('Knw ' + lettre):^{idx}}"
+            for n in range(1, max_questions + 1):
                 sous_option = f"{lettre}{n}"
-                if label in resultats and sous_option in resultats[label]:
+                if n <= len(questions) and label in resultats and sous_option in resultats[label]:
                     val = resultats[label][sous_option]
-                else:
+                elif n <= len(questions):
                     val = "--"
+                    complet = False
+                else:
+                    val = ""
                 row += f"|{val:^{col}}"
             row += "|"
             print(row)
             print(sep)
 
-        print(f"\n{self.message_fin}")
+        message = self.message_fin_complet if complet else self.message_fin_incomplet
+        print(f"\n{message}")
+
+        # Fonctions post-grille (toujours exécutées après la grille)
+        compilation_metriques(resultats)
+        compilation_temps(resultats)
+        sauvegarde(resultats)
+
+
+# =============================================================================
+# Fonctions post-grille
+# =============================================================================
+
+def compilation_metriques(resultats):
+    """Compile les métriques du knowledge. Appelée après l'affichage de la grille."""
+    pass
+
+
+def compilation_temps(resultats):
+    """Compile les données de temps du knowledge. Appelée après l'affichage de la grille."""
+    pass
+
+
+def sauvegarde(resultats):
+    """Sauvegarde les résultats du knowledge. Appelée après l'affichage de la grille."""
+    pass
 
 
 # =============================================================================
@@ -281,7 +311,8 @@ def construire_knowledge():
 
     # Skill grille
     registre.enregistrer("afficher_grille", AfficherGrilleSkill(
-        "afficher_grille", knowledge_config, config["message_fin"]))
+        "afficher_grille", knowledge_config,
+        config["message_fin_complet"], config["message_fin_incomplet"]))
 
     # Skill principal
     knowledge_secondaires = [(label, label) for label, _, _ in knowledge_config]

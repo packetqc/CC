@@ -315,6 +315,13 @@ Exemple avec 5 knowledge dont certains ont des nombres de questions différents 
 - **Si complet** (aucun `"--"`) : afficher `message_fin_complet` de `methodology-knowledge.md`
 - **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
 
+**Fonctions post-grille :** Après l'affichage de la grille et du message de fin, exécuter dans l'ordre ces 3 fonctions (définies dans `knowledge_skills.py`) :
+1. `compilation_metriques(resultats)` — Compile les métriques du knowledge
+2. `compilation_temps(resultats)` — Compile les données de temps
+3. `sauvegarde(resultats)` — Sauvegarde les résultats
+
+Ces fonctions sont **toujours** exécutées après la grille, que le quiz soit complet ou non.
+
 ### Important
 
 - Si l'utilisateur sélectionne "No preference", "Other" ou **Skip** dans AskUserQuestion :
