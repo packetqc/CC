@@ -65,12 +65,12 @@ def quiz_principal():
         print("\n=== Quiz Principal ===")
         for i, (nom, _) in enumerate(options, start=1):
             print(f"{i}. {nom}")
-        print(f"{len(options) + 1}. Passer")
+        print(f"{len(options) + 1}. Terminer")
 
         choix = lire_choix(f"Votre choix (1-{len(options) + 1}) : ", len(options) + 1)
 
         if choix == len(options) + 1:
-            print("\nVous avez choisi de passer.")
+            print("\nVous avez choisi de terminer.")
             break
 
         nom, lettre = options[choix - 1]
