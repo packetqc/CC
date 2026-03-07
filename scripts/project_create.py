@@ -4,13 +4,15 @@
 Syntaxe officielle : project create [title]
 
 Usage:
-  python3 project_create.py "Mon titre de projet"
+  python3 scripts/project_create.py "Mon titre de projet"
 """
 import json
 import os
 import sys
 
-PROJECTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".claude", "projects.json")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(SCRIPT_DIR)  # Racine du projet (parent de scripts/)
+PROJECTS_PATH = os.path.join(BASE_DIR, ".claude", "projects.json")
 
 
 def charger_projets():
@@ -31,7 +33,7 @@ def sauvegarder_projets(data):
 def main():
     if len(sys.argv) < 2 or not sys.argv[1].strip():
         print("Erreur : titre du projet manquant.")
-        print("Usage : python3 project_create.py \"Mon titre de projet\"")
+        print("Usage : python3 scripts/project_create.py \"Mon titre de projet\"")
         sys.exit(1)
 
     titre = sys.argv[1].strip()

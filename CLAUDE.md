@@ -20,7 +20,7 @@
 ## Persistance de l'exécution (checkpoint)
 
 - Avant toute exécution de programme, un checkpoint est écrit dans `.claude/checkpoint_execution.json`.
-- Après un compactage de session, TOUJOURS vérifier ce fichier via `python3 executer_demande.py --status` :
+- Après un compactage de session, TOUJOURS vérifier ce fichier via `python3 scripts/executer_demande.py --status` :
   - `phase: "termine"` → le programme a fini, lire le résultat sans relancer
   - `phase: "en_cours"` → vérifier si la preuve existe (programme fini entre-temps) sinon relancer
   - `phase: "pre_execution"` → le programme n'a pas démarré, relancer
