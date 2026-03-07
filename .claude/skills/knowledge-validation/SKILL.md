@@ -141,9 +141,20 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` 
 - Ne PAS afficher de choix Vrai/Faux/Passer à l'utilisateur
 - Cette option est entièrement programmatique et non modifiable par l'humain dans le fichier de configuration
 - Capturer le message initial de l'utilisateur au démarrage de la session (la première demande qu'il a tapée)
-- Appeler le skill `commande-utilisateur` via l'outil Skill en lui passant la chaîne en argument : `skill: "commande-utilisateur", args: "message initial de l'utilisateur"`
-- Le skill `commande-utilisateur` exécute `executer_demande.py` et retourne le résultat
-- Selon le résultat retourné par le skill : enregistrer "Vrai" ou "Faux" pour cette question
+
+**Rollback — Snapshot git avant exécution :**
+1. Avant d'exécuter, créer un snapshot : `git stash --include-untracked -m "snapshot-avant-execution"`
+2. Appeler le skill `commande-utilisateur` via l'outil Skill en lui passant la chaîne en argument : `skill: "commande-utilisateur", args: "message initial de l'utilisateur"`
+3. Le skill `commande-utilisateur` exécute `executer_demande.py` qui maintient un journal d'actions dans `.claude/journal_actions.json`
+4. Si le résultat est **Vrai** (succès) :
+   - Supprimer le stash : `git stash drop`
+   - Supprimer le journal d'actions : `rm -f .claude/journal_actions.json`
+   - Enregistrer "Vrai" pour cette question
+5. Si le résultat est **Faux** (échec) :
+   - D'abord, exécuter le rollback des actions externes via `python3 executer_demande.py --rollback` (utilise le journal d'actions)
+   - Ensuite, restaurer les fichiers : `git checkout . && git clean -fd`
+   - Enfin, restaurer le stash : `git stash pop`
+   - Enregistrer "Faux" pour cette question
 - Retourner automatiquement au Knowledge Secondaire
 
 **Pour toutes les autres actions (fonction, programme) :**
