@@ -205,8 +205,17 @@ def lister_routes():
     for route in routes:
         route_id = route.get("id", "?")
         description = route.get("description", "")
+        syntaxe = route.get("syntaxe", "")
         mots_cles = ", ".join(route.get("mots_cles", []))
-        print(f"[{route_id}] {description} (indices: {mots_cles})")
+        parametres = route.get("parametres", [])
+        params_str = ""
+        if parametres:
+            params_list = []
+            for p in parametres:
+                req = "obligatoire" if p.get("obligatoire") else "optionnel"
+                params_list.append(f"{p['nom']} ({req}: {p.get('description', '')})")
+            params_str = f" | paramètres: {', '.join(params_list)}"
+        print(f"[{route_id}] {description} | syntaxe: {syntaxe} | indices: {mots_cles}{params_str}")
 
 
 def trouver_route_par_id(route_id, config):
@@ -217,9 +226,13 @@ def trouver_route_par_id(route_id, config):
     return None
 
 
-def executer_route(route):
-    """Exécute le programme associé à une route."""
+def executer_route(route, args=None):
+    """Exécute le programme associé à une route avec ses arguments."""
     programme = route["programme"]
+    if args:
+        # Échapper les guillemets dans les arguments pour le shell
+        args_escaped = args.replace('"', '\\"')
+        programme = f'{programme} "{args_escaped}"'
     route_id = route.get("id", "inconnu")
     description = route.get("description", "")
 
@@ -341,10 +354,16 @@ def main():
     if arg == "--route":
         if len(sys.argv) < 3:
             print("Faux — identifiant de route manquant.")
-            print("Usage: python3 executer_demande.py --route <id>")
+            print("Usage: python3 executer_demande.py --route <id> [--args \"valeur\"]")
             sys.exit(1)
 
         route_id = sys.argv[2]
+
+        # Extraire les arguments optionnels (--args "valeur")
+        route_args = None
+        if len(sys.argv) >= 5 and sys.argv[3] == "--args":
+            route_args = sys.argv[4]
+
         config = charger_routes()
         if config is None:
             sys.exit(1)
@@ -356,7 +375,17 @@ def main():
             lister_routes()
             sys.exit(1)
 
-        executer_route(route)
+        # Vérifier les paramètres obligatoires
+        parametres = route.get("parametres", [])
+        params_obligatoires = [p for p in parametres if p.get("obligatoire")]
+        if params_obligatoires and not route_args:
+            print(f"Faux — paramètre(s) obligatoire(s) manquant(s) :")
+            for p in params_obligatoires:
+                print(f"  - {p['nom']} : {p.get('description', '')}")
+            print(f"Usage: python3 executer_demande.py --route {route_id} --args \"valeur\"")
+            sys.exit(1)
+
+        executer_route(route, args=route_args)
 
     else:
         print(f"Faux — argument inconnu : {arg}")

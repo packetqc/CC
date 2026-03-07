@@ -3,3 +3,4 @@ __pycache__/
 .claude/journal_actions.json
 .claude/preuve_execution.json
 .claude/checkpoint_execution.json
+.claude/projects.json

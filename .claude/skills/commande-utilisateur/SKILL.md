@@ -17,13 +17,24 @@ Ce skill reçoit en argument la chaîne de caractères correspondant à la deman
    python3 executer_demande.py --list-routes
    ```
 3. **Classifier l'intention** : analyser la demande en langage naturel et déterminer si elle correspond à l'une des routes disponibles. Utiliser :
-   - Les identifiants de route et leurs descriptions
+   - Les identifiants de route, leurs descriptions et leur **syntaxe officielle**
    - Les mots-clés comme **indices** (pas comme critères absolus)
    - La compréhension sémantique de la demande (ex: "compile mon app" → route `build`, "lance les vérifications" → route `test`)
-4. **Si une route correspond** : exécuter le programme via :
-   ```
-   python3 executer_demande.py --route <id>
-   ```
+   - **Détection de syntaxe exacte** : si la demande commence par la syntaxe officielle (ex: `project create Mon Titre`), reconnaître directement la route
+   - **Détection en langage naturel** : si la demande est en français courant (ex: "peux-tu me créer le projet ayant comme titre Projet numéro 1"), reconnaître la route ET extraire les paramètres
+4. **Extraire les paramètres** : si la route a des `parametres` définis, extraire leurs valeurs depuis la demande :
+   - **Syntaxe exacte** : `project create Mon Titre` → paramètre title = `"Mon Titre"`
+   - **Langage naturel** : `"crée-moi le projet Démo v2"` → paramètre title = `"Démo v2"`
+   - Les paramètres marqués `obligatoire: true` doivent être présents, sinon → **Faux**
+5. **Si une route correspond** : exécuter le programme via :
+   - Sans paramètres :
+     ```
+     python3 executer_demande.py --route <id>
+     ```
+   - Avec paramètres :
+     ```
+     python3 executer_demande.py --route <id> --args "<valeur extraite>"
+     ```
    - Si code de retour = 0 : indiquer **Vrai**
    - Si code de retour != 0 : indiquer **Faux**
 5. **Si aucune route ne correspond** (ex: "bonjour", demande hors périmètre) :
@@ -63,10 +74,31 @@ Si Claude répond à la demande au lieu de router vers un programme :
 ```json
 {
   "id": "mon-programme",
+  "syntaxe": "commande action [param1]",
+  "parametres": [
+    {
+      "nom": "param1",
+      "description": "Description du paramètre",
+      "obligatoire": true
+    }
+  ],
   "mots_cles": ["mot1", "mot2"],
   "programme": "python3 mon_script.py",
   "description": "Description de ce que fait le programme"
 }
 ```
 
-Les `mots_cles` servent d'**indices** pour aider la classification IA, mais Claude peut aussi reconnaître des formulations équivalentes qui ne contiennent pas ces mots-clés exacts.
+- La `syntaxe` définit la commande officielle exacte
+- Les `parametres` décrivent les valeurs à extraire de la demande
+- Les `mots_cles` servent d'**indices** pour aider la classification IA
+- Claude peut reconnaître des formulations en langage naturel qui ne contiennent pas ces mots-clés exacts
+
+### Exemples de classification
+
+| Demande | Route | Arguments |
+|---------|-------|-----------|
+| `project create Démo v2` | `project-create` | `--args "Démo v2"` |
+| `peux-tu créer le projet Démo v2` | `project-create` | `--args "Démo v2"` |
+| `build` | `build` | _(aucun)_ |
+| `compile mon application` | `build` | _(aucun)_ |
+| `bonjour` | _(aucune route)_ | → **Faux** |
