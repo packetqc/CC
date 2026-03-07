@@ -317,43 +317,47 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 
 Quand l'utilisateur fait **Skip** au niveau principal, construire et afficher un tableau dynamique basé sur les knowledge et questions présents dans `methodology-knowledge.md` :
 
-- **Lignes** : une par knowledge trouvé (ex: Knw A, Knw B, Knw C, Knw D...)
-- **Colonnes** : autant que le nombre maximum de questions parmi tous les knowledge (numérotées 1, 2, 3...)
+- **Lignes** : une par knowledge trouvé, en utilisant le **nom FR du knowledge** tel que défini dans `methodology-knowledge.md` (ex: "Validation", "Knowledge B", "Documentation"). Si le nom est trop long, le tronquer pour garder la grille lisible (max ~15 caractères).
+- **Colonnes** : utiliser les **IDs des questions** tels que définis dans `methodology-knowledge.md` (ex: A1, A2, A3, B1, B2...). Chaque knowledge affiche ses propres IDs comme en-têtes de colonnes.
 - **Valeurs** : remplacer par la réponse (Vrai, Faux, Passer) ou `--` si non répondu
 - **Largeur de colonne** : 10 caractères, valeurs centrées
 
-Exemple avec 3 knowledge de 3 questions chacun :
+Exemple avec 3 knowledge :
 ```
-        GRILLE DE RÉSULTATS
-+-------+----------+----------+----------+
-|       |    1     |    2     |    3     |
-+=======+==========+==========+==========+
-| Knw A |   Vrai   |    --    |  Passer  |
-+-------+----------+----------+----------+
-| Knw B |    --    |   Vrai   |    --    |
-+-------+----------+----------+----------+
-| Knw C |  Faux    |    --    |   Vrai   |
-+-------+----------+----------+----------+
+                GRILLE DE RÉSULTATS
++-----------------+----------+----------+----------+
+|                 |    A1    |    A2    |    A3    |
++=================+==========+==========+==========+
+| Validation      |   Vrai   |    --    |  Passer  |
++-----------------+----------+----------+----------+
+|                 |    B1    |    B2    |    B3    |
++-----------------+----------+----------+----------+
+| Knowledge B     |    --    |   Vrai   |    --    |
++-----------------+----------+----------+----------+
+|                 |    C1    |    C2    |    C3    |
++-----------------+----------+----------+----------+
+| Knowledge C     |  Faux    |    --    |   Vrai   |
++-----------------+----------+----------+----------+
 ```
 
-Exemple avec 5 knowledge dont certains ont des nombres de questions différents :
+Exemple avec knowledge ayant des nombres de questions différents :
 ```
-        GRILLE DE RÉSULTATS
-+-------+----------+----------+----------+----------+
-|       |    1     |    2     |    3     |    4     |
-+=======+==========+==========+==========+==========+
-| Knw A |   Vrai   |    --    |  Passer  |          |
-+-------+----------+----------+----------+----------+
-| Knw B |    --    |   Vrai   |    --    |          |
-+-------+----------+----------+----------+----------+
-| Knw C |  Faux    |    --    |   Vrai   |          |
-+-------+----------+----------+----------+----------+
-| Knw D |   Vrai   |    --    |          |          |
-+-------+----------+----------+----------+----------+
-| Knw E |    --    |   Vrai   |    --    |  Faux    |
-+-------+----------+----------+----------+----------+
+                GRILLE DE RÉSULTATS
++-----------------+----------+----------+----------+----------+
+|                 |    A1    |    A2    |    A3    |    A4    |
++=================+==========+==========+==========+==========+
+| Validation      |   Vrai   |   Vrai   |   Vrai   |   Vrai   |
++-----------------+----------+----------+----------+----------+
+|                 |    B1    |    B2    |    B3    |
++-----------------+----------+----------+----------+
+| Knowledge B     |    --    |    --    |    --    |
++-----------------+----------+----------+----------+
+|                 |    D1    |    D2    |    D3    |
++-----------------+----------+----------+----------+
+| Documentation   |    --    |    --    |    --    |
++-----------------+----------+----------+----------+
 ```
-(cellules vides si le knowledge n'a pas autant de questions)
+Chaque knowledge a sa propre rangée d'en-têtes avec ses IDs, suivie de sa rangée de valeurs. Cela permet de supporter des nombres de colonnes différents par knowledge.
 
 **Message de fin conditionnel :** Après la grille, vérifier si toutes les questions de tous les knowledge ont été répondues (aucune valeur `"--"` dans les résultats) :
 - **Si complet** (aucun `"--"`) : afficher `message_fin_complet` de `methodology-knowledge.md`
