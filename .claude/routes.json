@@ -12,7 +12,7 @@
         }
       ],
       "mots_cles": ["project create", "créer le projet", "créer un projet", "nouveau projet"],
-      "programme": "python3 project_create.py",
+      "programme": "python3 scripts/project_create.py",
       "description": "Créer un nouveau projet"
     },
     {

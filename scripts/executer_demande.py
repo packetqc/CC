@@ -12,9 +12,9 @@ Maintient un journal d'actions dans .claude/journal_actions.json
 pour permettre le rollback en cas d'échec.
 
 Usage:
-  python3 executer_demande.py --route build
-  python3 executer_demande.py --list-routes
-  python3 executer_demande.py --rollback
+  python3 scripts/executer_demande.py --route build
+  python3 scripts/executer_demande.py --list-routes
+  python3 scripts/executer_demande.py --rollback
 """
 import hashlib
 import json
@@ -24,7 +24,8 @@ import sys
 import time
 
 TIMEOUT_SECONDS = 60
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(SCRIPT_DIR)  # Racine du projet (parent de scripts/)
 JOURNAL_PATH = os.path.join(BASE_DIR, ".claude", "journal_actions.json")
 ROUTES_PATH = os.path.join(BASE_DIR, ".claude", "routes.json")
 PREUVE_PATH = os.path.join(BASE_DIR, ".claude", "preuve_execution.json")
@@ -372,7 +373,7 @@ def main():
     if arg == "--route":
         if len(sys.argv) < 3:
             print("Faux — identifiant de route manquant.")
-            print('Usage: python3 executer_demande.py --route <id> [--args "valeur"] [--context \'{"A1":"Vrai"}\']')
+            print('Usage: python3 scripts/executer_demande.py --route <id> [--args "valeur"] [--context \'{"A1":"Vrai"}\']')
             sys.exit(1)
 
         route_id = sys.argv[2]
@@ -409,7 +410,7 @@ def main():
             print("Faux — paramètre(s) obligatoire(s) manquant(s) :")
             for p in params_obligatoires:
                 print(f"  - {p['nom']} : {p.get('description', '')}")
-            print(f"Usage: python3 executer_demande.py --route {route_id} --args \"valeur\"")
+            print(f"Usage: python3 scripts/executer_demande.py --route {route_id} --args \"valeur\"")
             sys.exit(1)
 
         executer_route(route, args=route_args, context=route_context)

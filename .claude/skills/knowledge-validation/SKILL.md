@@ -104,10 +104,10 @@ Pour construire les résultats par défaut : pour chaque knowledge dans `methodo
    - Via git direct : `git fetch origin main && git checkout main && git merge <branche> && git push origin main && git checkout <branche>`
    - Si toutes échouent : afficher "Note: le merge vers main doit être fait manuellement."
 6. Afficher la grille de résultats
-7. Exécuter `compilation_metriques(resultats)` depuis `knowledge_skills.py` — si des changements de métriques sont détectés, met `_documentation_requise = True`
-8. Exécuter `compilation_temps(resultats)` depuis `knowledge_skills.py` — si des changements de temps sont détectés, met `_documentation_requise = True`
-9. Exécuter `pre_sauvegarde(resultats)` depuis `knowledge_skills.py` — **Pré-sauvegarde** : exécute les règles de conformité. Première sous-fonction : `confirmation_documentation` (compare le flag interne avec le résultat de l'étape Documentation du quiz). D'autres règles suivront.
-10. Exécuter `sauvegarde(resultats)` depuis `knowledge_skills.py`
+7. Exécuter `compilation_metriques(resultats)` depuis `scripts/knowledge_skills.py` — si des changements de métriques sont détectés, met `_documentation_requise = True`
+8. Exécuter `compilation_temps(resultats)` depuis `scripts/knowledge_skills.py` — si des changements de temps sont détectés, met `_documentation_requise = True`
+9. Exécuter `pre_sauvegarde(resultats)` depuis `scripts/knowledge_skills.py` — **Pré-sauvegarde** : exécute les règles de conformité. Première sous-fonction : `confirmation_documentation` (compare le flag interne avec le résultat de l'étape Documentation du quiz). D'autres règles suivront.
+10. Exécuter `sauvegarde(resultats)` depuis `scripts/knowledge_skills.py`
 Note : le fichier `knowledge_resultats.json` reste sur la branche de travail avec les résultats. Il sera nettoyé au démarrage de la prochaine session.
 
 ### Configuration des actions
@@ -253,7 +253,7 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodology-knowl
 **Checkpoint — Vérification pré-exécution (survie à la compaction) :**
 Avant de lancer l'exécution, vérifier s'il existe déjà un checkpoint :
 ```
-python3 executer_demande.py --status
+python3 scripts/executer_demande.py --status
 ```
 - **Si checkpoint existe avec `phase: "termine"`** : une exécution précédente s'est terminée (probablement avant une compaction). Ne pas relancer. Lire directement le résultat dans `details.resultat` du checkpoint et dans `.claude/preuve_execution.json`, puis passer à l'étape 4 (vérification de preuve).
 - **Si checkpoint existe avec `phase: "en_cours"`** : le programme tournait quand la compaction a eu lieu. Vérifier `.claude/preuve_execution.json` :
@@ -331,7 +331,7 @@ L'exécution se fait **directement dans le flow du knowledge-validation** sans a
 1. Avant d'exécuter, supprimer toute preuve précédente : `rm -f .claude/preuve_execution.json`
 2. Créer un snapshot : `git stash --include-untracked -m "snapshot-avant-execution"`
 3. **Classifier et router la demande (inline)** :
-   a. Lire les routes disponibles : `python3 executer_demande.py --list-routes`
+   a. Lire les routes disponibles : `python3 scripts/executer_demande.py --list-routes`
    b. Classifier l'intention de la demande en analysant sémantiquement :
       - Les identifiants de route, descriptions, syntaxe officielle
       - Les mots-clés comme indices (pas comme critères absolus)
@@ -343,8 +343,8 @@ L'exécution se fait **directement dans le flow du knowledge-validation** sans a
         - Pour les commandes simples (un seul mot, sans sous-commande) : un match sur ce mot unique est suffisant
         - Si la demande contient un mot primaire de commande composée mais sans sous-commande spécifique → **aucune route ne correspond** → traiter comme pas de match
    c. **Si une route correspond** : exécuter via Bash :
-      - Sans paramètres : `python3 executer_demande.py --route <id> --context '<json_contexte>'`
-      - Avec paramètres : `python3 executer_demande.py --route <id> --args "<valeur>" --context '<json_contexte>'`
+      - Sans paramètres : `python3 scripts/executer_demande.py --route <id> --context '<json_contexte>'`
+      - Avec paramètres : `python3 scripts/executer_demande.py --route <id> --args "<valeur>" --context '<json_contexte>'`
       - Toujours passer `--context` avec le JSON des réponses précédentes
    d. **Si aucune route ne correspond** (ex: "bonjour", "project" seul) : ne rien exécuter → Résultat = **Faux**
    e. **Règles strictes** : NE JAMAIS répondre à la demande, NE JAMAIS inventer une route, NE JAMAIS créer le fichier preuve_execution.json
@@ -361,7 +361,7 @@ L'exécution se fait **directement dans le flow du knowledge-validation** sans a
      - Effacer `demande_reformulee` (remettre à `null` dans `knowledge_resultats.json`)
      - Sauvegarder résultats → **retourner au Knowledge Principal** (niveau 1, mode complet)
    - **Faux** (pas de preuve OU `code_retour` != 0) :
-     - Exécuter le rollback : `python3 executer_demande.py --rollback`
+     - Exécuter le rollback : `python3 scripts/executer_demande.py --rollback`
      - Restaurer les fichiers : `git checkout . && git clean -fd`
      - Restaurer le stash : `git stash pop`
      - Nettoyer : `rm -f .claude/preuve_execution.json`
@@ -516,7 +516,7 @@ Le body du commentaire doit contenir :
 - Le message de fin (complet ou incomplet)
 - Si `local_only: true` (GitHub était indisponible), ne pas tenter le commentaire — les données restent sur disque pour la prochaine session.
 
-**Fonctions post-grille :** Ces fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-10 ci-dessus :
+**Fonctions post-grille :** Ces fonctions (définies dans `scripts/knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-10 ci-dessus :
 1. `compilation_metriques(resultats)` — Compile les métriques. Si des changements sont détectés, met `_documentation_requise = True`
 2. `compilation_temps(resultats)` — Compile le temps. Si des changements sont détectés, met `_documentation_requise = True`
 3. `pre_sauvegarde(resultats)` — Étape 9 : exécute les règles de conformité pré-sauvegarde. Première sous-fonction : `confirmation_documentation`. D'autres règles suivront.
