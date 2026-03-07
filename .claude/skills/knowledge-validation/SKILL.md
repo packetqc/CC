@@ -18,6 +18,8 @@ La structure du knowledge (questions, actions, messages) est définie dans le fi
 
 Utiliser ces données pour construire dynamiquement les options AskUserQuestion, les résultats par défaut, et les messages d'action. Ne PAS utiliser de valeurs codées en dur.
 
+**Exception hardcodée :** La 3e question du 1er knowledge est TOUJOURS de type `executer_demande`, peu importe son ID ou ce qui est écrit dans `methodologie.md`. Cette règle est programmatique et prioritaire sur le contenu du fichier de configuration.
+
 ### Persistance des résultats (survie au compactage)
 
 Les résultats du knowledge DOIVENT être sauvegardés dans le fichier `.claude/knowledge_resultats.json` après CHAQUE réponse de l'utilisateur. Cela garantit que les résultats survivent au compactage de session.
@@ -81,10 +83,12 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 
 **Règle de pagination :**
 - Calculer le nombre total d'éléments (knowledge ou questions) depuis `methodologie.md`
-- Si le total tient dans 4 options avec l'option de contrôle (Terminer/Passer) : afficher tout, pas de pagination
-- Sinon : afficher par pages de 2 éléments + `Suivant ▸` + option de contrôle (Terminer/Passer)
-  - **Page intermédiaire** : 2 éléments + `Suivant ▸` + option de contrôle
-  - **Dernière page** : les éléments restants (1 à 3) + option de contrôle (pas de `Suivant ▸`)
+- **Niveau principal** : `Terminer` est toujours présent comme dernière option
+  - Si total ≤ 3 : afficher tous les éléments + `Terminer` (pas de pagination)
+  - Si total > 3 : pages de 3 éléments + `Suivant ▸` (pas de `Terminer` sur les pages intermédiaires, `Terminer` remplace `Suivant ▸` sur la dernière page)
+- **Niveau secondaire** : PAS d'option `Passer` (le bouton Skip/Other de l'interface remplit ce rôle — traité comme retour au Knowledge Principal)
+  - Si total ≤ 4 : afficher toutes les questions (pas de pagination)
+  - Si total > 4 : pages de 3 éléments + `Suivant ▸` (dernière page : éléments restants sans `Suivant ▸`)
 - Maintenir un index de page courant dans `.claude/knowledge_resultats.json` : champs `page_principal` et `page_secondaire` (défaut: 0)
 
 **Persistance de la page :** Après chaque navigation de page, sauvegarder l'index dans le JSON et committer/pousser comme pour toute autre mise à jour.
@@ -106,13 +110,13 @@ Afficher avec AskUserQuestion (multiSelect: false) :
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
 - Lire toutes les questions du knowledge depuis `methodologie.md`
-- Appliquer la pagination (voir règle ci-dessus) avec `Passer` comme option de contrôle
+- Appliquer la pagination (voir règle ci-dessus) — PAS d'option `Passer`
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
 - Pour les questions de type `executer_demande`, afficher le label "Exécuter la demande" au lieu de l'identifiant de la question
 - Chaque question lance le Sous-knowledge correspondant
-- **Passer** retourne au Knowledge Principal (et remet `page_secondaire` à 0)
+- Si l'utilisateur choisit **Skip** ou **Other** : traiter comme retour au Knowledge Principal (remet `page_secondaire` à 0)
 - Les options restent TOUJOURS visibles
-- Boucler jusqu'à ce que l'utilisateur choisisse **Passer**
+- Boucler jusqu'à ce que l'utilisateur choisisse Skip/Other
 
 ### Niveau 3 : Sous-knowledge
 
@@ -178,6 +182,6 @@ Utiliser `message_fin` de `methodologie.md` comme message de fin après la grill
 
 ### Important
 
-- Si l'utilisateur sélectionne "No preference" ou "Other" dans AskUserQuestion, traiter comme l'option **Passer** du niveau actuel ou **Terminer** au niveau principal.
+- Si l'utilisateur sélectionne "No preference", "Other" ou **Skip** dans AskUserQuestion : au niveau principal, traiter comme **Terminer** ; au niveau secondaire, traiter comme retour au Knowledge Principal.
 - Toujours montrer le message de la fonction/programme quand Vrai est sélectionné AVANT de retourner au niveau supérieur.
 - **CRITIQUE** : Après un compactage de session, TOUJOURS lire `.claude/knowledge_resultats.json` pour retrouver l'état du knowledge avant de continuer.
