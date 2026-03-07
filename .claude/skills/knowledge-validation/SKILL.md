@@ -29,6 +29,8 @@ Le format est construit dynamiquement à partir de `knowledge_config/methodologi
   "en_cours": true,
   "niveau": "principal",
   "knowledge_actif": null,
+  "page_principal": 0,
+  "page_secondaire": 0,
   "resultats": {
     "Knowledge A": {"A1": "--", "A2": "--", "A3": "--"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
@@ -73,12 +75,27 @@ Quand l'utilisateur répond **Vrai**, consulter `knowledge_config/methodologie.m
 Quand l'utilisateur répond **Faux**, enregistrer "Faux" sans action.
 Quand l'utilisateur répond **Passer**, enregistrer "Passer" sans action.
 
+### Système de pagination
+
+AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illimité d'éléments dans `methodologie.md`, un système de pagination est utilisé aux niveaux principal et secondaire.
+
+**Règle de pagination :**
+- Calculer le nombre total d'éléments (knowledge ou questions) depuis `methodologie.md`
+- Si le total tient dans 4 options avec l'option de contrôle (Terminer/Passer) : afficher tout, pas de pagination
+- Sinon : afficher par pages de 2 éléments + `Suivant ▸` + option de contrôle (Terminer/Passer)
+  - **Page intermédiaire** : 2 éléments + `Suivant ▸` + option de contrôle
+  - **Dernière page** : les éléments restants (1 à 3) + option de contrôle (pas de `Suivant ▸`)
+- Maintenir un index de page courant dans `.claude/knowledge_resultats.json` : champs `page_principal` et `page_secondaire` (défaut: 0)
+
+**Persistance de la page :** Après chaque navigation de page, sauvegarder l'index dans le JSON et committer/pousser comme pour toute autre mise à jour.
+
 ### Niveau 1 : Knowledge Principal
 
 Afficher avec AskUserQuestion (multiSelect: false) :
 - header: "Principal"
-- options: construire dynamiquement à partir des knowledge dans `methodologie.md`, plus `Terminer` comme dernière option
-- **Contrainte AskUserQuestion** : maximum 4 options (2 à 4). `Terminer` compte comme une option, donc maximum 3 knowledge au niveau principal. Si `methodologie.md` contient plus de 3 knowledge, ne garder que les 3 premiers
+- Lire tous les knowledge depuis `methodologie.md`
+- Appliquer la pagination (voir règle ci-dessus) avec `Terminer` comme option de contrôle
+- Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
 - Chaque knowledge lance le Knowledge Secondaire correspondant
 - **Terminer** affiche la grille de résultats et le knowledge est terminé
 - Les options restent TOUJOURS visibles (ne jamais retirer une option complétée)
@@ -88,11 +105,12 @@ Afficher avec AskUserQuestion (multiSelect: false) :
 
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
-- options: construire dynamiquement à partir des questions du knowledge dans `methodologie.md`, plus `Passer` comme dernière option
-- **Contrainte AskUserQuestion** : maximum 4 options (2 à 4). `Passer` compte comme une option, donc maximum 3 questions par knowledge. Si un knowledge contient plus de 3 questions, ne garder que les 3 premières
-- Pour les questions de type `executer_demande`, afficher le label "Exécuter la demande" au lieu de l'identifiant de la question (ex: au lieu de "A3", afficher "Exécuter la demande")
+- Lire toutes les questions du knowledge depuis `methodologie.md`
+- Appliquer la pagination (voir règle ci-dessus) avec `Passer` comme option de contrôle
+- Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
+- Pour les questions de type `executer_demande`, afficher le label "Exécuter la demande" au lieu de l'identifiant de la question
 - Chaque question lance le Sous-knowledge correspondant
-- **Passer** retourne au Knowledge Principal
+- **Passer** retourne au Knowledge Principal (et remet `page_secondaire` à 0)
 - Les options restent TOUJOURS visibles
 - Boucler jusqu'à ce que l'utilisateur choisisse **Passer**
 
@@ -118,24 +136,45 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` 
 
 ### Grille de résultats
 
-Quand l'utilisateur choisit **Terminer**, afficher ce tableau en texte :
+Quand l'utilisateur choisit **Terminer**, construire et afficher un tableau dynamique basé sur les knowledge et questions présents dans `methodologie.md` :
 
+- **Colonnes** : une par knowledge trouvé (ex: Knw A, Knw B, Knw C, Knw D...)
+- **Lignes** : autant que le nombre maximum de questions parmi tous les knowledge
+- **Valeurs** : remplacer par la réponse (Vrai, Faux, Passer) ou `--` si non répondu
+- **Largeur de colonne** : 10 caractères, valeurs centrées
+
+Exemple avec 3 knowledge de 3 questions chacun :
 ```
         GRILLE DE RÉSULTATS
 +-----+----------+----------+----------+
 |     |  Knw A   |  Knw B   |  Knw C   |
 +=====+==========+==========+==========+
-|  1  | [val]    | [val]    | [val]    |
+|  1  |   Vrai   |    --    |  Faux    |
 +-----+----------+----------+----------+
-|  2  | [val]    | [val]    | [val]    |
+|  2  |    --    |   Vrai   |    --    |
 +-----+----------+----------+----------+
-|  3  | [val]    | [val]    | [val]    |
+|  3  |  Passer  |    --    |   Vrai   |
 +-----+----------+----------+----------+
-
-Merci d'avoir complété l'étape de validation des travaux.
 ```
 
-Remplacer [val] par la réponse (Vrai, Faux, Passer) ou `--` si non répondu. Centrer les valeurs dans les colonnes de 10 caractères. Utiliser `message_fin` de `methodologie.md` comme message de fin.
+Exemple avec 5 knowledge dont certains ont des nombres de questions différents :
+```
+        GRILLE DE RÉSULTATS
++-----+----------+----------+----------+----------+----------+
+|     |  Knw A   |  Knw B   |  Knw C   |  Knw D   |  Knw E   |
++=====+==========+==========+==========+==========+==========+
+|  1  |   Vrai   |    --    |  Faux    |   Vrai   |    --    |
++-----+----------+----------+----------+----------+----------+
+|  2  |    --    |   Vrai   |    --    |    --    |   Vrai   |
++-----+----------+----------+----------+----------+----------+
+|  3  |  Passer  |    --    |   Vrai   |          |    --    |
++-----+----------+----------+----------+----------+----------+
+|  4  |          |          |          |          |  Faux    |
++-----+----------+----------+----------+----------+----------+
+```
+(cellules vides si le knowledge n'a pas autant de questions)
+
+Utiliser `message_fin` de `methodologie.md` comme message de fin après la grille.
 
 ### Important
 
