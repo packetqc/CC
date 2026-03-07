@@ -14,3 +14,12 @@
 - Si ce fichier existe et que `en_cours` est `true`, le knowledge n'est pas terminé : reprendre au niveau indiqué.
 - Si ce fichier existe et que `en_cours` est `false`, le knowledge est déjà complété : ne pas relancer.
 - Après un compactage de session, TOUJOURS lire ce fichier pour retrouver l'état avant de continuer.
+
+## Persistance de l'exécution (checkpoint)
+
+- Avant toute exécution de programme, un checkpoint est écrit dans `.claude/checkpoint_execution.json`.
+- Après un compactage de session, TOUJOURS vérifier ce fichier via `python3 executer_demande.py --status` :
+  - `phase: "termine"` → le programme a fini, lire le résultat sans relancer
+  - `phase: "en_cours"` → vérifier si la preuve existe (programme fini entre-temps) sinon relancer
+  - `phase: "pre_execution"` → le programme n'a pas démarré, relancer
+  - Pas de fichier → rien en cours

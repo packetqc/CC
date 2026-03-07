@@ -1,0 +1,43 @@
+{
+  "description": "Table de routage des demandes utilisateur. Chaque route associe une syntaxe officielle, des mots-clés et un programme à exécuter.",
+  "routes": [
+    {
+      "id": "project-create",
+      "syntaxe": "project create [title]",
+      "parametres": [
+        {
+          "nom": "title",
+          "description": "Le titre du projet à créer",
+          "obligatoire": true
+        }
+      ],
+      "mots_cles": ["project create", "créer le projet", "créer un projet", "nouveau projet"],
+      "programme": "python3 project_create.py",
+      "description": "Créer un nouveau projet"
+    },
+    {
+      "id": "build",
+      "syntaxe": "build",
+      "parametres": [],
+      "mots_cles": ["build", "compiler", "compilation"],
+      "programme": "echo 'TODO: programme de build à implémenter'",
+      "description": "Compiler le projet"
+    },
+    {
+      "id": "test",
+      "syntaxe": "test",
+      "parametres": [],
+      "mots_cles": ["test", "tester", "tests"],
+      "programme": "echo 'TODO: programme de test à implémenter'",
+      "description": "Exécuter les tests"
+    },
+    {
+      "id": "deploy",
+      "syntaxe": "deploy",
+      "parametres": [],
+      "mots_cles": ["deploy", "déployer", "déploiement"],
+      "programme": "echo 'TODO: programme de déploiement à implémenter'",
+      "description": "Déployer l'application"
+    }
+  ]
+}
