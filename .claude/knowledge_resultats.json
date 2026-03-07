@@ -4,9 +4,9 @@
   "knowledge_actif": "Knowledge A",
   "page_principal": 0,
   "page_secondaire": 0,
-  "demande_executee": false,
+  "demande_executee": true,
   "resultats": {
-    "Knowledge A": {"A1": "Vrai", "A2": "Faux", "A3": "--"},
+    "Knowledge A": {"A1": "Vrai", "A2": "Faux", "A3": "Faux"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
     "Knowledge C": {"C1": "--", "C2": "--", "C3": "--"}
   }
