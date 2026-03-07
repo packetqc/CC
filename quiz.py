@@ -52,6 +52,35 @@ def quiz_secondaire(nom, lettre):
     return tous_resultats
 
 
+def afficher_grille(options, resultats_par_quiz):
+    """Affiche une grille de résultats organisée par quiz."""
+    print("\n" + "=" * 40)
+    print("        GRILLE DE RÉSULTATS")
+    print("=" * 40)
+
+    has_results = False
+    for nom, lettre in options:
+        print(f"\n  {nom}")
+        print(f"  {'-' * 20}")
+        if nom in resultats_par_quiz and resultats_par_quiz[nom]:
+            has_results = True
+            for sous_option in [f"{lettre}1", f"{lettre}2", f"{lettre}3"]:
+                if sous_option in resultats_par_quiz[nom]:
+                    reponse = resultats_par_quiz[nom][sous_option]
+                    print(f"    {sous_option} : {reponse}")
+                else:
+                    print(f"    {sous_option} : --")
+        else:
+            for sous_option in [f"{lettre}1", f"{lettre}2", f"{lettre}3"]:
+                print(f"    {sous_option} : --")
+
+    if not has_results:
+        print("\n  Aucune réponse enregistrée.")
+
+    print("\n" + "=" * 40)
+    print("Merci d'avoir participé au quiz!")
+
+
 def quiz_principal():
     """Quiz principal. Les options restent visibles après complétion."""
     options = [
@@ -59,7 +88,7 @@ def quiz_principal():
         ("Quiz B", "B"),
         ("Quiz C", "C"),
     ]
-    tous_resultats = {}
+    resultats_par_quiz = {}
 
     while True:
         print("\n=== Quiz Principal ===")
@@ -75,16 +104,11 @@ def quiz_principal():
 
         nom, lettre = options[choix - 1]
         resultats = quiz_secondaire(nom, lettre)
-        tous_resultats.update(resultats)
+        if nom not in resultats_par_quiz:
+            resultats_par_quiz[nom] = {}
+        resultats_par_quiz[nom].update(resultats)
 
-    print("\n=== Résultats ===")
-    if tous_resultats:
-        for option, reponse in tous_resultats.items():
-            print(f"  {option} : {reponse}")
-    else:
-        print("  Aucune réponse enregistrée.")
-
-    print("\nMerci d'avoir participé au quiz!")
+    afficher_grille(options, resultats_par_quiz)
 
 
 if __name__ == "__main__":
