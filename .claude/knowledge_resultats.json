@@ -8,7 +8,7 @@
   "demande_reformulee": null,
   "resultats": {
     "Knowledge A": {"A1": "Vrai", "A2": "Faux", "A3": "Vrai"},
-    "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
+    "Knowledge B": {"B1": "Vrai", "B2": "--", "B3": "--"},
     "Knowledge C": {"C1": "--", "C2": "--", "C3": "--"}
   }
 }
