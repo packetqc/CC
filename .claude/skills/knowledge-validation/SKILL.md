@@ -190,8 +190,9 @@ L'exécution se fait **directement dans le flow du knowledge-validation** sans a
      - Supprimer le stash : `git stash drop`
      - Nettoyer : `rm -f .claude/journal_actions.json .claude/preuve_execution.json .claude/checkpoint_execution.json`
      - Enregistrer "Vrai" pour cette question
+     - Mettre `demande_executee` à `true`
      - Effacer `demande_reformulee` (remettre à `null` dans `knowledge_resultats.json`)
-     - Sauvegarder résultats → retourner au Knowledge Secondaire
+     - Sauvegarder résultats → **retourner au Knowledge Principal** (niveau 1, mode complet)
    - **Faux** (pas de preuve OU `code_retour` != 0) :
      - Exécuter le rollback : `python3 executer_demande.py --rollback`
      - Restaurer les fichiers : `git checkout . && git clean -fd`
