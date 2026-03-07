@@ -135,6 +135,9 @@ Pour chaque knowledge, afficher avec AskUserQuestion :
 Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` :
 
 **Si l'action est `executer_demande` (ex: A3) :**
+- **Prérequis** : vérifier que TOUTES les questions qui précèdent dans ce même knowledge ont été répondues (pas de `"--"`). Si une ou plusieurs questions précédentes n'ont pas été répondues :
+  - Afficher un message d'avertissement : "Vous devez répondre aux questions précédentes avant d'exécuter la demande."
+  - Retourner au Knowledge Secondaire sans exécuter
 - Ne PAS afficher de choix Vrai/Faux/Passer à l'utilisateur
 - Cette option est entièrement programmatique et non modifiable par l'humain dans le fichier de configuration
 - Capturer le message initial de l'utilisateur au démarrage de la session (la première demande qu'il a tapée)
