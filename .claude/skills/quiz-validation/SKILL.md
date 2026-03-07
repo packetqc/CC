@@ -43,7 +43,11 @@ Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_
 2. Sauvegarder le fichier
 3. Committer sur la branche de travail : `git add .claude/quiz_resultats.json && git commit -m "quiz: validation terminée"`
 4. Pousser sur la branche de travail : `git push -u origin <branche-courante>`
-5. Synchroniser vers main avec git : `git fetch origin main && git checkout main && git merge <branche-courante> && git push origin main && git checkout <branche-courante>` (ignorer si erreur)
+5. Tenter de synchroniser vers main (utiliser la première méthode qui fonctionne, ignorer les erreurs) :
+   - Via gh CLI : `gh pr create --title "Quiz: validation terminée" --base main && gh pr merge --merge`
+   - Via API GitHub avec $GH_TOKEN : créer un PR puis le merger via l'API REST
+   - Via git direct : `git fetch origin main && git checkout main && git merge <branche> && git push origin main && git checkout <branche>`
+   - Si toutes échouent : afficher "Note: le merge vers main doit être fait manuellement."
 6. Afficher la grille de résultats
 7. Supprimer le fichier JSON pour que le quiz redémarre à la prochaine session : `rm .claude/quiz_resultats.json && git add .claude/quiz_resultats.json && git commit -m "quiz: nettoyage pour prochaine session" && git push -u origin <branche-courante>`
 
