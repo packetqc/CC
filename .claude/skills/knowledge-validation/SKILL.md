@@ -142,6 +142,18 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` 
 - Cette option est entièrement programmatique et non modifiable par l'humain dans le fichier de configuration
 - Capturer le message initial de l'utilisateur au démarrage de la session (la première demande qu'il a tapée)
 
+**Checkpoint — Vérification pré-exécution (survie à la compaction) :**
+Avant de lancer l'exécution, vérifier s'il existe déjà un checkpoint :
+```
+python3 executer_demande.py --status
+```
+- **Si checkpoint existe avec `phase: "termine"`** : une exécution précédente s'est terminée (probablement avant une compaction). Ne pas relancer. Lire directement le résultat dans `details.resultat` du checkpoint et dans `.claude/preuve_execution.json`, puis passer à l'étape 4 (vérification de preuve).
+- **Si checkpoint existe avec `phase: "en_cours"`** : le programme tournait quand la compaction a eu lieu. Vérifier `.claude/preuve_execution.json` :
+  - Si preuve existe → le programme a fini entre-temps → lire le résultat
+  - Si pas de preuve → exécution interrompue → relancer l'exécution (étape 1)
+- **Si checkpoint existe avec `phase: "pre_execution"`** : le programme n'a pas encore démarré → continuer normalement (étape 1)
+- **Si pas de checkpoint** : première exécution → continuer normalement (étape 1)
+
 **Rollback — Snapshot git avant exécution :**
 1. Avant d'exécuter, supprimer toute preuve précédente : `rm -f .claude/preuve_execution.json`
 2. Créer un snapshot : `git stash --include-untracked -m "snapshot-avant-execution"`
@@ -158,10 +170,10 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` 
 5. Déterminer le résultat :
    - **Vrai** (preuve existe ET `code_retour` = 0) :
      - Supprimer le stash : `git stash drop`
-     - Nettoyer : `rm -f .claude/journal_actions.json .claude/preuve_execution.json`
+     - Nettoyer : `rm -f .claude/journal_actions.json .claude/preuve_execution.json .claude/checkpoint_execution.json`
      - Enregistrer "Vrai" pour cette question
    - **Faux** (pas de preuve après 2 tentatives OU `code_retour` != 0) :
-     - D'abord, exécuter le rollback des actions externes via `python3 executer_demande.py --rollback` (utilise le journal d'actions)
+     - D'abord, exécuter le rollback des actions externes via `python3 executer_demande.py --rollback` (nettoie aussi le checkpoint)
      - Ensuite, restaurer les fichiers : `git checkout . && git clean -fd`
      - Enfin, restaurer le stash : `git stash pop`
      - Nettoyer : `rm -f .claude/preuve_execution.json`

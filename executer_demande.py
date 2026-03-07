@@ -28,6 +28,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 JOURNAL_PATH = os.path.join(BASE_DIR, ".claude", "journal_actions.json")
 ROUTES_PATH = os.path.join(BASE_DIR, ".claude", "routes.json")
 PREUVE_PATH = os.path.join(BASE_DIR, ".claude", "preuve_execution.json")
+CHECKPOINT_PATH = os.path.join(BASE_DIR, ".claude", "checkpoint_execution.json")
 
 
 def ecrire_preuve(route_id, resultat_code, programme):
@@ -61,6 +62,41 @@ def supprimer_preuve():
     """Supprime le fichier de preuve (nettoyage)."""
     if os.path.exists(PREUVE_PATH):
         os.remove(PREUVE_PATH)
+
+
+def ecrire_checkpoint(phase, route_id=None, demande=None, details=None):
+    """Écrit un checkpoint pour survivre à une compaction de session.
+
+    Phases :
+    - "pre_execution"  : avant de lancer le programme (on sait quoi faire)
+    - "en_cours"       : le programme est en train de tourner
+    - "termine"        : le programme a fini (résultat disponible dans preuve)
+    - "rollback"       : un rollback est en cours
+    """
+    checkpoint = {
+        "phase": phase,
+        "route_id": route_id,
+        "demande": demande,
+        "timestamp": time.time(),
+        "details": details or {},
+    }
+    os.makedirs(os.path.dirname(CHECKPOINT_PATH), exist_ok=True)
+    with open(CHECKPOINT_PATH, "w") as f:
+        json.dump(checkpoint, f, indent=2, ensure_ascii=False)
+
+
+def charger_checkpoint():
+    """Charge le checkpoint s'il existe."""
+    if os.path.exists(CHECKPOINT_PATH):
+        with open(CHECKPOINT_PATH, "r") as f:
+            return json.load(f)
+    return None
+
+
+def supprimer_checkpoint():
+    """Supprime le checkpoint (nettoyage après succès)."""
+    if os.path.exists(CHECKPOINT_PATH):
+        os.remove(CHECKPOINT_PATH)
 
 
 def charger_journal():
@@ -193,6 +229,12 @@ def executer_route(route):
     # Supprimer toute preuve précédente
     supprimer_preuve()
 
+    # Checkpoint AVANT exécution — survit à une compaction
+    ecrire_checkpoint("pre_execution", route_id=route_id, details={
+        "programme": programme,
+        "description": description,
+    })
+
     # Initialiser le journal
     journal = {"actions": []}
     sauvegarder_journal(journal)
@@ -201,6 +243,12 @@ def executer_route(route):
         "route_id": route_id,
         "commande": programme,
         "rollback_cmd": None,
+    })
+
+    # Checkpoint EN COURS — le programme tourne
+    ecrire_checkpoint("en_cours", route_id=route_id, details={
+        "programme": programme,
+        "description": description,
     })
 
     try:
@@ -222,19 +270,41 @@ def executer_route(route):
             else:
                 print(f"Faux — code de retour : {resultat.returncode}")
             ecrire_preuve(route_id, resultat.returncode, programme)
+            ecrire_checkpoint("termine", route_id=route_id, details={
+                "programme": programme,
+                "code_retour": resultat.returncode,
+                "resultat": "Faux",
+            })
             sys.exit(1)
 
         ecrire_preuve(route_id, 0, programme)
+        ecrire_checkpoint("termine", route_id=route_id, details={
+            "programme": programme,
+            "code_retour": 0,
+            "resultat": "Vrai",
+        })
         print("Vrai — exécution réussie.")
         sys.exit(0)
 
     except subprocess.TimeoutExpired:
         ecrire_preuve(route_id, -1, programme)
+        ecrire_checkpoint("termine", route_id=route_id, details={
+            "programme": programme,
+            "code_retour": -1,
+            "resultat": "Faux",
+            "erreur": "timeout",
+        })
         print(f"Faux — délai d'attente dépassé ({TIMEOUT_SECONDS}s).")
         sys.exit(1)
 
     except OSError as e:
         ecrire_preuve(route_id, -2, programme)
+        ecrire_checkpoint("termine", route_id=route_id, details={
+            "programme": programme,
+            "code_retour": -2,
+            "resultat": "Faux",
+            "erreur": str(e),
+        })
         print(f"Faux — impossible de lancer le processus : {e}")
         sys.exit(1)
 
@@ -250,6 +320,16 @@ def main():
     # Mode rollback
     if arg == "--rollback":
         rollback()
+        supprimer_checkpoint()
+        sys.exit(0)
+
+    # Mode statut du checkpoint
+    if arg == "--status":
+        cp = charger_checkpoint()
+        if cp is None:
+            print("Aucune exécution en cours ou récente.")
+            sys.exit(0)
+        print(json.dumps(cp, indent=2, ensure_ascii=False))
         sys.exit(0)
 
     # Mode liste des routes
