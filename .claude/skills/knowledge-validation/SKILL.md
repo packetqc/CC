@@ -102,11 +102,9 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` 
 - Ne PAS afficher de choix Vrai/Faux/Passer à l'utilisateur
 - Cette option est entièrement programmatique et non modifiable par l'humain dans le fichier de configuration
 - Capturer le message initial de l'utilisateur au démarrage de la session (la première demande qu'il a tapée)
-- Exécuter le programme `executer_demande.py` via Bash en lui passant la chaîne de caractères en paramètre : `python3 executer_demande.py "message initial de l'utilisateur"`
-- Ce programme lance un sous-processus, surveille son exécution (timeout, non-réponse, erreur) et retourne un code de sortie
-- Si le code de retour est 0 : enregistrer "Vrai" pour cette question
-- Si le code de retour est != 0 : enregistrer "Faux" pour cette question
-- Afficher la sortie du programme à l'utilisateur
+- Appeler le skill `commande-utilisateur` via l'outil Skill en lui passant la chaîne en argument : `skill: "commande-utilisateur", args: "message initial de l'utilisateur"`
+- Le skill `commande-utilisateur` exécute `executer_demande.py` et retourne le résultat
+- Selon le résultat retourné par le skill : enregistrer "Vrai" ou "Faux" pour cette question
 - Retourner automatiquement au Knowledge Secondaire
 
 **Pour toutes les autres actions (fonction, programme) :**
