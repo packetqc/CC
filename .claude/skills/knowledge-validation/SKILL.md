@@ -13,8 +13,23 @@ La structure du knowledge (questions, actions, messages) est définie dans le fi
 - La liste des knowledge (noms, lettres, questions)
 - Les actions associées à chaque question (fonction/programme)
 - Les messages à afficher quand l'utilisateur répond Vrai
-- Les choix disponibles pour le sous-knowledge (Vrai, Faux, Passer)
+- Les choix disponibles pour le sous-knowledge (Vrai, Faux, Passer / True, False, Skip)
 - Le message de fin
+
+**Format bilingue :** Le fichier de configuration supporte le français et l'anglais :
+- **Titre** : `# Titre FR | Title EN`
+- **Messages** : préfixés `FR:` et `EN:` sur des lignes séparées
+- **Noms de knowledge** : `### Nom FR | Name EN (lettre: X)`
+- **Tableaux** : 6 colonnes — `| ID | Choix FR | Choix EN | Action | Message FR | Message EN |`
+  - `ID` : identifiant technique (A1, B2, D1...)
+  - `Choix FR` / `Choix EN` : label affiché dans AskUserQuestion selon la langue
+  - `Action` : type d'action (fonction, programme, executer_demande)
+  - `Message FR` / `Message EN` : message affiché quand l'utilisateur répond Vrai
+- **Choix du sous-knowledge** : `FR: Vrai, Faux, Passer` / `EN: True, False, Skip`
+
+Le parseur (`knowledge_config/__init__.py`) accepte un paramètre `langue` ("fr" ou "en") et retourne les données dans la langue sélectionnée. Par défaut : "fr". Chaque question retournée contient un champ `choix` (le label bilingue) en plus de `id`, `action_vrai`, `message_vrai`.
+
+**Pour AskUserQuestion**, utiliser le champ `choix` comme label des options (au lieu de l'ID brut). L'ID reste utilisé pour les clés internes et la grille de résultats.
 
 Utiliser ces données pour construire dynamiquement les options AskUserQuestion, les résultats par défaut, et les messages d'action. Ne PAS utiliser de valeurs codées en dur.
 
