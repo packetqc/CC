@@ -5,7 +5,7 @@
   "page_principal": 0,
   "page_secondaire": 0,
   "demande_executee": false,
-  "demande_reformulee": null,
+  "demande_reformulee": "crée-moi le projet Zamboni",
   "resultats": {
     "Knowledge A": {"A1": "Vrai", "A2": "Faux", "A3": "Faux"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
