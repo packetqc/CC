@@ -1,7 +1,7 @@
 {
   "en_cours": true,
-  "niveau": "principal",
-  "quiz_actif": null,
+  "niveau": "secondaire",
+  "quiz_actif": "C",
   "resultats": {
     "Quiz A": {"A1": "Vrai", "A2": "--", "A3": "--"},
     "Quiz B": {"B1": "--", "B2": "--", "B3": "--"},
