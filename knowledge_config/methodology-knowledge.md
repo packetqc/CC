@@ -1,8 +1,12 @@
 # Knowledge de validation des travaux
 
-## Message de fin
+## Message de fin complet
 
 Merci d'avoir complété l'étape de validation des travaux.
+
+## Message de fin incomplet
+
+Votre validation n'est pas complète. Recommencez dès que vous le pourrez.
 
 ## Choix du sous-knowledge
 

@@ -9,7 +9,8 @@ def charger_methodologie(chemin=None):
     Retourne un dictionnaire avec la structure :
     {
         "titre": "...",
-        "message_fin": "...",
+        "message_fin_complet": "...",
+        "message_fin_incomplet": "...",
         "knowledge_principal": {
             "titre": "Knowledge Principal",
             "knowledge": [{"nom": "...", "lettre": "...", "questions": [...]}]
@@ -26,7 +27,8 @@ def charger_methodologie(chemin=None):
 
     config = {
         "titre": "",
-        "message_fin": "",
+        "message_fin_complet": "",
+        "message_fin_incomplet": "",
         "knowledge_principal": {"titre": "Knowledge Principal", "knowledge": []},
         "sous_knowledge": {"choix": []},
     }
@@ -36,11 +38,17 @@ def charger_methodologie(chemin=None):
     if m:
         config["titre"] = m.group(1).strip()
 
-    # Message de fin : texte après ## Message de fin
-    m = re.search(r"## Message de fin\s*\n\s*\n(.+?)(?:\n\s*\n|\Z)",
+    # Message de fin complet
+    m = re.search(r"## Message de fin complet\s*\n\s*\n(.+?)(?:\n\s*\n|\Z)",
                   contenu, re.DOTALL)
     if m:
-        config["message_fin"] = m.group(1).strip()
+        config["message_fin_complet"] = m.group(1).strip()
+
+    # Message de fin incomplet
+    m = re.search(r"## Message de fin incomplet\s*\n\s*\n(.+?)(?:\n\s*\n|\Z)",
+                  contenu, re.DOTALL)
+    if m:
+        config["message_fin_incomplet"] = m.group(1).strip()
 
     # Choix du sous-knowledge : liste après ## Choix du sous-knowledge
     m = re.search(r"## Choix du sous-knowledge\s*\n\s*\n(.+?)(?:\n\s*\n|\Z)",

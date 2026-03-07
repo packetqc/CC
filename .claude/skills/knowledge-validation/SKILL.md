@@ -311,7 +311,9 @@ Exemple avec 5 knowledge dont certains ont des nombres de questions différents 
 ```
 (cellules vides si le knowledge n'a pas autant de questions)
 
-Utiliser `message_fin` de `methodology-knowledge.md` comme message de fin après la grille.
+**Message de fin conditionnel :** Après la grille, vérifier si toutes les questions de tous les knowledge ont été répondues (aucune valeur `"--"` dans les résultats) :
+- **Si complet** (aucun `"--"`) : afficher `message_fin_complet` de `methodology-knowledge.md`
+- **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
 
 ### Important
 
