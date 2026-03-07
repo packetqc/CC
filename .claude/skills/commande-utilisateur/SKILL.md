@@ -1,6 +1,6 @@
 ---
 name: commande-utilisateur
-description: Exécute la demande initiale de l'utilisateur via le programme executer_demande.py. Appelé par le knowledge-validation (A3).
+description: Exécute la demande initiale de l'utilisateur via le programme scripts/executer_demande.py. Appelé par le knowledge-validation (A3).
 ---
 
 ## Exécution de la demande utilisateur
@@ -23,7 +23,7 @@ S'il n'y a pas de `|CONTEXT|`, l'argument entier est la demande (sans contexte).
    - Si pas de `|CONTEXT|`, la demande est l'argument entier et le contexte est vide
 2. Lire les routes disponibles via :
    ```
-   python3 executer_demande.py --list-routes
+   python3 scripts/executer_demande.py --list-routes
    ```
 3. **Classifier l'intention** : analyser la demande en langage naturel et déterminer si elle correspond à l'une des routes disponibles. Utiliser :
    - Les identifiants de route, leurs descriptions et leur **syntaxe officielle**
@@ -38,19 +38,19 @@ S'il n'y a pas de `|CONTEXT|`, l'argument entier est la demande (sans contexte).
 5. **Si une route correspond** : exécuter le programme via :
    - Sans paramètres, sans contexte :
      ```
-     python3 executer_demande.py --route <id>
+     python3 scripts/executer_demande.py --route <id>
      ```
    - Avec paramètres :
      ```
-     python3 executer_demande.py --route <id> --args "<valeur extraite>"
+     python3 scripts/executer_demande.py --route <id> --args "<valeur extraite>"
      ```
    - Avec contexte (réponses précédentes) :
      ```
-     python3 executer_demande.py --route <id> --context '{"A1":"Vrai","A2":"Faux"}'
+     python3 scripts/executer_demande.py --route <id> --context '{"A1":"Vrai","A2":"Faux"}'
      ```
    - Avec les deux :
      ```
-     python3 executer_demande.py --route <id> --args "<valeur>" --context '{"A1":"Vrai","A2":"Faux"}'
+     python3 scripts/executer_demande.py --route <id> --args "<valeur>" --context '{"A1":"Vrai","A2":"Faux"}'
      ```
    - **TOUJOURS passer `--context`** si un contexte a été reçu dans l'argument du skill
    - Si code de retour = 0 : indiquer **Vrai**
@@ -65,7 +65,7 @@ S'il n'y a pas de `|CONTEXT|`, l'argument entier est la demande (sans contexte).
 - **NE JAMAIS** répondre directement à la demande de l'utilisateur (pas de "bonjour", pas de "que puis-je faire pour vous")
 - **NE JAMAIS** inventer une route qui n'existe pas
 - **NE JAMAIS** exécuter une commande qui ne provient pas d'une route configurée
-- **NE JAMAIS** créer ou écrire le fichier `.claude/preuve_execution.json` — seul `executer_demande.py` peut le faire
+- **NE JAMAIS** créer ou écrire le fichier `.claude/preuve_execution.json` — seul `scripts/executer_demande.py` peut le faire
 - **NE JAMAIS** improviser, expliquer, commenter ou ajouter du texte en dehors du protocole
 - Le rôle de Claude ici est **uniquement** : classifier → router → retourner le résultat. Rien d'autre.
 - En cas de doute : **Faux**. Ne pas deviner, ne pas tenter.
@@ -80,7 +80,7 @@ Si l'argument commence par `STRICT:`, cela signifie que la première tentative a
 
 ### Vérification anti-contournement
 
-Le knowledge-validation vérifie **après** le retour de ce skill que le fichier `.claude/preuve_execution.json` existe et contient un token SHA-256 valide (basé sur timestamp + PID du processus). Ce fichier est écrit **uniquement** par `executer_demande.py` lors d'une exécution réelle.
+Le knowledge-validation vérifie **après** le retour de ce skill que le fichier `.claude/preuve_execution.json` existe et contient un token SHA-256 valide (basé sur timestamp + PID du processus). Ce fichier est écrit **uniquement** par `scripts/executer_demande.py` lors d'une exécution réelle.
 
 Si Claude répond à la demande au lieu de router vers un programme :
 - Le fichier de preuve n'existera pas
