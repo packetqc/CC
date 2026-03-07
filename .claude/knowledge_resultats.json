@@ -7,7 +7,7 @@
   "demande_executee": false,
   "demande_reformulee": null,
   "resultats": {
-    "Validation de la demande": {"A1": "Vrai", "A2": "Vrai", "A3": "--", "A4": "--"},
+    "Validation de la demande": {"A1": "Vrai", "A2": "Vrai", "A3": "Vrai", "A4": "--"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
     "Knowledge C": {"C1": "--", "C2": "--", "C3": "--"},
     "Documentation": {"D1": "--", "D2": "--", "D3": "--"}
