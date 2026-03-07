@@ -53,32 +53,24 @@ def quiz_secondaire(nom, lettre):
 
 
 def afficher_grille(options, resultats_par_quiz):
-    """Affiche une grille de résultats organisée par quiz."""
-    print("\n" + "=" * 40)
-    print("        GRILLE DE RÉSULTATS")
-    print("=" * 40)
+    """Affiche les résultats sous forme de tableau."""
+    print("\n        GRILLE DE RÉSULTATS")
+    print("+" + "-" * 10 + "+" + "-" * 10 + "+" + "-" * 10 + "+" + "-" * 10 + "+")
+    print(f"|{'':^10}|{'  1':^10}|{'  2':^10}|{'  3':^10}|")
+    print("+" + "=" * 10 + "+" + "=" * 10 + "+" + "=" * 10 + "+" + "=" * 10 + "+")
 
-    has_results = False
     for nom, lettre in options:
-        print(f"\n  {nom}")
-        print(f"  {'-' * 20}")
-        if nom in resultats_par_quiz and resultats_par_quiz[nom]:
-            has_results = True
-            for sous_option in [f"{lettre}1", f"{lettre}2", f"{lettre}3"]:
-                if sous_option in resultats_par_quiz[nom]:
-                    reponse = resultats_par_quiz[nom][sous_option]
-                    print(f"    {sous_option} : {reponse}")
-                else:
-                    print(f"    {sous_option} : --")
-        else:
-            for sous_option in [f"{lettre}1", f"{lettre}2", f"{lettre}3"]:
-                print(f"    {sous_option} : --")
+        vals = []
+        for n in range(1, 4):
+            sous_option = f"{lettre}{n}"
+            if nom in resultats_par_quiz and sous_option in resultats_par_quiz[nom]:
+                vals.append(resultats_par_quiz[nom][sous_option])
+            else:
+                vals.append("--")
+        print(f"|{nom:^10}|{vals[0]:^10}|{vals[1]:^10}|{vals[2]:^10}|")
+        print("+" + "-" * 10 + "+" + "-" * 10 + "+" + "-" * 10 + "+" + "-" * 10 + "+")
 
-    if not has_results:
-        print("\n  Aucune réponse enregistrée.")
-
-    print("\n" + "=" * 40)
-    print("Merci d'avoir participé au quiz!")
+    print("\nMerci d'avoir participé au quiz!")
 
 
 def quiz_principal():
