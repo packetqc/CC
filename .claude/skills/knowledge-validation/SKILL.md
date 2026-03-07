@@ -144,7 +144,7 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 **Mode complet (demande_executee = true) :**
 - Afficher avec AskUserQuestion (multiSelect: false) :
   - header: "Principal"
-  - question: inclure la note `"(Si vous avez terminé, appuyez sur Skip)"` à la fin de la question
+  - question: format `"Choisir. (Si vous avez terminé, appuyez sur Skip)"` — en anglais : `"Choose. (If you are done, press Skip)"`
   - Tous les knowledge lus depuis `methodology-knowledge.md` (le 1er knowledge reste toujours accessible pour relancer l'exécution via sa 3e question)
   - Appliquer la pagination sans option de contrôle (Skip natif remplace Terminer)
 - Si l'utilisateur choisit un knowledge : lancer le Knowledge Secondaire correspondant (questionnaire de validation)
@@ -157,7 +157,7 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
-- question: inclure la note `"(Pour passer, appuyez sur Skip)"` à la fin de la question
+- question: format `"Choisir parmi les options suivantes. (Pour passer, appuyez sur Skip)"` — en anglais : `"Choose from the following options. (To skip, press Skip)"`
 - Lire toutes les questions du knowledge depuis `methodology-knowledge.md`
 - Appliquer la pagination sans option de contrôle (Skip natif remplace Passer)
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
