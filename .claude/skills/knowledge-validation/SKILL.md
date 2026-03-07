@@ -9,7 +9,7 @@ Tu dois exécuter ce knowledge en utilisant l'outil AskUserQuestion. Le knowledg
 
 ### Source de configuration
 
-La structure du knowledge (questions, actions, messages) est définie dans le fichier `knowledge_config/methodology-knowledge.md`. Au démarrage du skill, lire ce fichier avec l'outil Read pour obtenir :
+La structure du knowledge (questions, actions, messages) est définie dans le fichier `methodology/methodology-knowledge.md`. Au démarrage du skill, lire ce fichier avec l'outil Read pour obtenir :
 - La liste des knowledge (noms, lettres, questions)
 - Les actions associées à chaque question (fonction/programme)
 - Les messages à afficher quand l'utilisateur répond Vrai
@@ -19,7 +19,7 @@ La structure du knowledge (questions, actions, messages) est définie dans le fi
 **Format bilingue :** Le fichier de configuration supporte le français et l'anglais :
 - **Titre** : `# Titre FR | Title EN`
 - **Messages** : préfixés `FR:` et `EN:` sur des lignes séparées
-- **Noms de knowledge** : `### Nom FR | Name EN (lettre: X)` — optionnel : `(lettre: X, methodology: methodology-name)` pour associer une méthodologie spécifique (fichier `knowledge_config/methodologies/<methodology-name>.md`)
+- **Noms de knowledge** : `### Nom FR | Name EN (lettre: X)` — optionnel : `(lettre: X, methodology: methodology-name)` pour associer une méthodologie spécifique (fichier `methodology/<methodology-name>.md`)
 - **Tableaux** : 6 colonnes — `| ID | Choix FR | Choix EN | Action | Message FR | Message EN |`
   - `ID` : identifiant technique (A1, B2, D1...)
   - `Choix FR` / `Choix EN` : label affiché dans AskUserQuestion selon la langue
@@ -40,7 +40,7 @@ Utiliser ces données pour construire dynamiquement les options AskUserQuestion,
 Les résultats du knowledge DOIVENT être sauvegardés dans le fichier `.claude/knowledge_resultats.json` après CHAQUE réponse de l'utilisateur. Cela garantit que les résultats survivent au compactage de session.
 
 **Format du fichier `.claude/knowledge_resultats.json` :**
-Le format est construit dynamiquement à partir de `knowledge_config/methodology-knowledge.md`. Exemple avec la config actuelle :
+Le format est construit dynamiquement à partir de `methodology/methodology-knowledge.md`. Exemple avec la config actuelle :
 ```json
 {
   "en_cours": true,
@@ -112,7 +112,7 @@ Note : le fichier `knowledge_resultats.json` reste sur la branche de travail ave
 
 ### Configuration des actions
 
-Quand l'utilisateur répond **Vrai**, consulter `knowledge_config/methodology-knowledge.md` pour trouver l'action et le message associés à la question courante :
+Quand l'utilisateur répond **Vrai**, consulter `methodology/methodology-knowledge.md` pour trouver l'action et le message associés à la question courante :
 - Chaque question dans le fichier a un champ `action_vrai` (fonction ou programme) et un champ `message_vrai`
 - Afficher le `message_vrai` de la question
 
@@ -412,7 +412,7 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 
 **Pour toutes les autres actions (fonction, programme) :**
 - **Lecture de methodology pré-exécution** : avant d'exécuter l'action, vérifier si le knowledge parent a un champ `methodology` dans sa configuration (ex: `methodology: methodology-documentation` dans le header du knowledge). Si oui :
-  1. Lire le fichier `knowledge_config/methodologies/<methodology>.md` avec l'outil Read (ex: `knowledge_config/methodologies/methodology-documentation.md`)
+  1. Lire le fichier `methodology/<methodology>.md` avec l'outil Read (ex: `methodology/methodology-documentation.md`)
   2. Utiliser les instructions de cette methodology pour guider l'exécution de la fonction/programme
   3. Cela permet à Claude d'être spécialisé pour la tâche sans charger toutes les methodologies en mémoire
 - Si pas de champ `methodology` : exécuter normalement sans lecture supplémentaire
