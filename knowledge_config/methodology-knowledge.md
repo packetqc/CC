@@ -41,7 +41,7 @@ EN: True, False, Skip
 | C2 | Question C2              | Question C2              | programme | >>> Je suis le programme C2.   | >>> I am program C2.           |
 | C3 | Question C3              | Question C3              | fonction  | >>> Je suis la fonction C3.    | >>> I am function C3.          |
 
-### Documentation | Documentation (lettre: D)
+### Documentation | Documentation (lettre: D, methodologie: documentation)
 
 | ID | Choix FR                      | Choix EN                     | Action   | Message FR                               | Message EN                            |
 |----|-------------------------------|------------------------------|----------|------------------------------------------|---------------------------------------|
