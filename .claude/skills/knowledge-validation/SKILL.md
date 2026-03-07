@@ -9,7 +9,7 @@ Tu dois exécuter ce knowledge en utilisant l'outil AskUserQuestion. Le knowledg
 
 ### Source de configuration
 
-La structure du knowledge (questions, actions, messages) est définie dans le fichier `knowledge_config/methodologie.md`. Au démarrage du skill, lire ce fichier avec l'outil Read pour obtenir :
+La structure du knowledge (questions, actions, messages) est définie dans le fichier `knowledge_config/methodology-knowledge.md`. Au démarrage du skill, lire ce fichier avec l'outil Read pour obtenir :
 - La liste des knowledge (noms, lettres, questions)
 - Les actions associées à chaque question (fonction/programme)
 - Les messages à afficher quand l'utilisateur répond Vrai
@@ -18,14 +18,14 @@ La structure du knowledge (questions, actions, messages) est définie dans le fi
 
 Utiliser ces données pour construire dynamiquement les options AskUserQuestion, les résultats par défaut, et les messages d'action. Ne PAS utiliser de valeurs codées en dur.
 
-**Exception hardcodée :** La 3e question du 1er knowledge est TOUJOURS de type `executer_demande`, peu importe son ID ou ce qui est écrit dans `methodologie.md`. Cette règle est programmatique et prioritaire sur le contenu du fichier de configuration.
+**Exception hardcodée :** La 3e question du 1er knowledge est TOUJOURS de type `executer_demande`, peu importe son ID ou ce qui est écrit dans `methodology-knowledge.md`. Cette règle est programmatique et prioritaire sur le contenu du fichier de configuration.
 
 ### Persistance des résultats (survie au compactage)
 
 Les résultats du knowledge DOIVENT être sauvegardés dans le fichier `.claude/knowledge_resultats.json` après CHAQUE réponse de l'utilisateur. Cela garantit que les résultats survivent au compactage de session.
 
 **Format du fichier `.claude/knowledge_resultats.json` :**
-Le format est construit dynamiquement à partir de `knowledge_config/methodologie.md`. Exemple avec la config actuelle :
+Le format est construit dynamiquement à partir de `knowledge_config/methodology-knowledge.md`. Exemple avec la config actuelle :
 ```json
 {
   "en_cours": true,
@@ -42,7 +42,7 @@ Le format est construit dynamiquement à partir de `knowledge_config/methodologi
   }
 }
 ```
-Pour construire les résultats par défaut : pour chaque knowledge dans `methodologie.md`, créer une entrée avec le nom du knowledge, et pour chaque question, initialiser à `"--"`.
+Pour construire les résultats par défaut : pour chaque knowledge dans `methodology-knowledge.md`, créer une entrée avec le nom du knowledge, et pour chaque question, initialiser à `"--"`.
 
 **Au démarrage du skill :**
 1. Lire `.claude/knowledge_resultats.json` avec l'outil Read
@@ -72,7 +72,7 @@ Note : le fichier `knowledge_resultats.json` reste sur la branche de travail ave
 
 ### Configuration des actions
 
-Quand l'utilisateur répond **Vrai**, consulter `knowledge_config/methodologie.md` pour trouver l'action et le message associés à la question courante :
+Quand l'utilisateur répond **Vrai**, consulter `knowledge_config/methodology-knowledge.md` pour trouver l'action et le message associés à la question courante :
 - Chaque question dans le fichier a un champ `action_vrai` (fonction ou programme) et un champ `message_vrai`
 - Afficher le `message_vrai` de la question
 
@@ -81,10 +81,10 @@ Quand l'utilisateur répond **Passer**, enregistrer "Passer" sans action.
 
 ### Système de pagination
 
-AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illimité d'éléments dans `methodologie.md`, un système de pagination est utilisé aux niveaux principal et secondaire.
+AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illimité d'éléments dans `methodology-knowledge.md`, un système de pagination est utilisé aux niveaux principal et secondaire.
 
 **Règle de pagination (identique aux deux niveaux) :**
-- Calculer le nombre total d'éléments (knowledge ou questions) depuis `methodologie.md`
+- Calculer le nombre total d'éléments (knowledge ou questions) depuis `methodology-knowledge.md`
 - Chaque niveau a une option de contrôle fixe en dernière position :
   - **Niveau principal** : `Terminer` (toujours en dernière position)
   - **Niveau secondaire** : `Passer` (toujours en dernière position)
@@ -110,7 +110,7 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 **Mode complet (demande_executee = true) :**
 - Afficher avec AskUserQuestion (multiSelect: false) :
   - header: "Principal"
-  - Tous les knowledge lus depuis `methodologie.md` (le 1er knowledge reste toujours accessible pour relancer l'exécution via sa 3e question)
+  - Tous les knowledge lus depuis `methodology-knowledge.md` (le 1er knowledge reste toujours accessible pour relancer l'exécution via sa 3e question)
   - Appliquer la pagination avec `Terminer` comme option de contrôle
 - Si l'utilisateur choisit un knowledge : lancer le Knowledge Secondaire correspondant (questionnaire de validation)
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page et réafficher
@@ -122,7 +122,7 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
-- Lire toutes les questions du knowledge depuis `methodologie.md`
+- Lire toutes les questions du knowledge depuis `methodology-knowledge.md`
 - Appliquer la pagination (voir règle ci-dessus) avec `Passer` comme option de contrôle
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
 - Pour les questions de type `executer_demande`, afficher le label "Exécuter la demande" au lieu de l'identifiant de la question
@@ -139,7 +139,7 @@ Si on entre dans le Knowledge Secondaire et que `demande_reformulee` est non `nu
 
 ### Niveau 3 : Sous-knowledge
 
-Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` :
+Pour chaque question, vérifier d'abord le type d'action dans `methodology-knowledge.md` :
 
 **Si l'action est `executer_demande` (ex: A3) :**
 - **Prérequis** : vérifier que TOUTES les questions qui précèdent dans ce même knowledge ont été répondues (pas de `"--"`). Si une ou plusieurs questions précédentes n'ont pas été répondues :
@@ -175,11 +175,16 @@ L'exécution se fait **directement dans le flow du knowledge-validation** sans a
       - Les mots-clés comme indices (pas comme critères absolus)
       - Détection de syntaxe exacte (ex: `project create Mon Titre` → route `project-create`)
       - Détection en langage naturel (ex: "peux-tu créer le projet X" → route `project-create`, param title = "X")
+      - **Règles de matching des commandes multi-mots :**
+        - Analyser le champ `syntaxe` de chaque route pour distinguer les commandes simples (un seul mot, ex: `build`) des commandes composées (multi-mots, ex: `project create [title]`)
+        - Pour les commandes composées : la demande DOIT contenir tous les mots de la commande (ex: "project create") pour matcher. Le mot primaire seul (ex: "project") ne suffit PAS — il pourrait correspondre à d'autres sous-commandes futures (project view, project list, etc.)
+        - Pour les commandes simples (un seul mot, sans sous-commande) : un match sur ce mot unique est suffisant
+        - Si la demande contient un mot primaire de commande composée mais sans sous-commande spécifique → **aucune route ne correspond** → traiter comme pas de match
    c. **Si une route correspond** : exécuter via Bash :
       - Sans paramètres : `python3 executer_demande.py --route <id> --context '<json_contexte>'`
       - Avec paramètres : `python3 executer_demande.py --route <id> --args "<valeur>" --context '<json_contexte>'`
       - Toujours passer `--context` avec le JSON des réponses précédentes
-   d. **Si aucune route ne correspond** (ex: "bonjour") : ne rien exécuter → Résultat = **Faux**
+   d. **Si aucune route ne correspond** (ex: "bonjour", "project" seul) : ne rien exécuter → Résultat = **Faux**
    e. **Règles strictes** : NE JAMAIS répondre à la demande, NE JAMAIS inventer une route, NE JAMAIS créer le fichier preuve_execution.json
 4. Vérifier la preuve d'exécution :
    - Lire le fichier `.claude/preuve_execution.json` avec l'outil Read
@@ -228,13 +233,13 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 **Pour toutes les autres actions (fonction, programme) :**
 - Afficher avec AskUserQuestion :
   - header: l'identifiant de la question (ex: "A1")
-  - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodologie.md`
+  - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodology-knowledge.md`
   - Si **Vrai** : afficher le message de la fonction ou du programme associé (voir tableau ci-dessus), puis retourner au Knowledge Secondaire
   - Si **Faux** ou **Passer** : enregistrer la réponse et retourner au Knowledge Secondaire
 
 ### Grille de résultats
 
-Quand l'utilisateur choisit **Terminer**, construire et afficher un tableau dynamique basé sur les knowledge et questions présents dans `methodologie.md` :
+Quand l'utilisateur choisit **Terminer**, construire et afficher un tableau dynamique basé sur les knowledge et questions présents dans `methodology-knowledge.md` :
 
 - **Colonnes** : une par knowledge trouvé (ex: Knw A, Knw B, Knw C, Knw D...)
 - **Lignes** : autant que le nombre maximum de questions parmi tous les knowledge
@@ -272,7 +277,7 @@ Exemple avec 5 knowledge dont certains ont des nombres de questions différents 
 ```
 (cellules vides si le knowledge n'a pas autant de questions)
 
-Utiliser `message_fin` de `methodologie.md` comme message de fin après la grille.
+Utiliser `message_fin` de `methodology-knowledge.md` comme message de fin après la grille.
 
 ### Important
 

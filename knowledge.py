@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Knowledge imbriqué à 4 niveaux avec maximum 4 choix par niveau.
 
-Charge la configuration depuis knowledge_config/methodologie.md.
+Charge la configuration depuis knowledge_config/methodology-knowledge.md.
 """
 import subprocess
 import sys
