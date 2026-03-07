@@ -47,3 +47,4 @@ EN: True, False, Skip
 |----|-------------------------------|------------------------------|----------|------------------------------------------|---------------------------------------|
 | D1 | Documentation système         | System documentation         | fonction | >>> Documentation système complétée.     | >>> System documentation completed.   |
 | D2 | Documentation utilisateur     | User documentation           | fonction | >>> Documentation utilisateur complétée. | >>> User documentation completed.     |
+| D3 | Tous                          | All                          | tous     | >>> Toute la documentation complétée.    | >>> All documentation completed.      |

@@ -281,6 +281,17 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 - Après une exécution **Vrai**, effacer `demande_reformulee` (remettre à `null`)
 - Après une nouvelle reformulation, écraser la valeur précédente
 
+**Si l'action est `tous` (ex: D3) :**
+- Cette action est **programmatique** — ne PAS afficher de choix Vrai/Faux/Passer
+- Quand l'utilisateur sélectionne cette option au niveau secondaire :
+  1. Itérer automatiquement à travers TOUTES les autres questions du même knowledge (celles qui ne sont PAS de type `tous`)
+  2. Pour chaque question : exécuter l'action associée comme si l'utilisateur avait répondu **Vrai** (afficher le message, déclencher la fonction/programme)
+  3. Enregistrer "Vrai" pour CHAQUE question exécutée dans les résultats
+  4. Enregistrer "Vrai" pour la question `tous` elle-même
+  5. Afficher le message associé à la question `tous`
+  6. Retourner au Knowledge Secondaire
+- Ce type d'action est **réutilisable** par n'importe quel knowledge qui souhaite offrir un raccourci "tout faire d'un coup"
+
 **Pour toutes les autres actions (fonction, programme) :**
 - Afficher avec AskUserQuestion :
   - header: l'identifiant de la question (ex: "A1")
