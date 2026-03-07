@@ -24,69 +24,47 @@ def sous_quiz(nom):
     return reponses[choix]
 
 
-def quiz_tertiaire(lettre):
-    """Quiz tertiaire avec 3 sous-options + Passer (max 4 choix)."""
+
+def quiz_secondaire(nom, lettre):
+    """Quiz secondaire avec sous-options lettre1, lettre2, lettre3 + Passer."""
     sous_options_restantes = [f"{lettre}1", f"{lettre}2", f"{lettre}3"]
-    resultats = {}
-
-    while sous_options_restantes:
-        print(f"\n    == Quiz Tertiaire ({lettre}) ==")
-        for i, option in enumerate(sous_options_restantes, start=1):
-            print(f"    {i}. {option}?")
-
-        num_passer = len(sous_options_restantes) + 1
-        print(f"    {num_passer}. Passer")
-
-        choix = lire_choix(f"    Votre choix (1-{num_passer}) : ", num_passer)
-
-        if choix == num_passer:
-            print(f"    Vous passez le quiz {lettre}.")
-            break
-
-        option_choisie = sous_options_restantes[choix - 1]
-        reponse = sous_quiz(option_choisie)
-        resultats[option_choisie] = reponse
-        sous_options_restantes.remove(option_choisie)
-
-    return resultats
-
-
-def quiz_secondaire():
-    """Quiz secondaire (ancien principal) avec les lettres A, B, C + Passer."""
-    lettres_restantes = ["A", "B", "C"]
     tous_resultats = {}
 
-    while lettres_restantes:
-        print("\n  == Quiz Secondaire ==")
-        for i, lettre in enumerate(lettres_restantes, start=1):
-            print(f"  {i}. {lettre}?")
+    while sous_options_restantes:
+        print(f"\n  == Quiz Secondaire ({nom}) ==")
+        for i, option in enumerate(sous_options_restantes, start=1):
+            print(f"  {i}. {option}?")
 
-        num_passer = len(lettres_restantes) + 1
+        num_passer = len(sous_options_restantes) + 1
         print(f"  {num_passer}. Passer")
 
         choix = lire_choix(f"  Votre choix (1-{num_passer}) : ", num_passer)
 
         if choix == num_passer:
-            print("  Vous passez le quiz secondaire.")
+            print(f"  Vous passez le quiz {nom}.")
             break
 
-        lettre_choisie = lettres_restantes[choix - 1]
-        resultats = quiz_tertiaire(lettre_choisie)
-        tous_resultats.update(resultats)
-        lettres_restantes.remove(lettre_choisie)
+        option_choisie = sous_options_restantes[choix - 1]
+        reponse = sous_quiz(option_choisie)
+        tous_resultats[option_choisie] = reponse
+        sous_options_restantes.remove(option_choisie)
 
     return tous_resultats
 
 
 def quiz_principal():
-    """Nouveau quiz principal. Les options restent visibles après complétion."""
-    options = ["Quiz Lettres", "Quiz 2", "Quiz 3"]
+    """Quiz principal. Les options restent visibles après complétion."""
+    options = [
+        ("Quiz A", "A"),
+        ("Quiz B", "B"),
+        ("Quiz C", "C"),
+    ]
     tous_resultats = {}
 
     while True:
         print("\n=== Quiz Principal ===")
-        for i, option in enumerate(options, start=1):
-            print(f"{i}. {option}")
+        for i, (nom, _) in enumerate(options, start=1):
+            print(f"{i}. {nom}")
         print(f"{len(options) + 1}. Passer")
 
         choix = lire_choix(f"Votre choix (1-{len(options) + 1}) : ", len(options) + 1)
@@ -95,13 +73,9 @@ def quiz_principal():
             print("\nVous avez choisi de passer.")
             break
 
-        if choix == 1:
-            resultats = quiz_secondaire()
-            tous_resultats.update(resultats)
-        elif choix == 2:
-            print("\n  [Quiz 2 - à définir]")
-        elif choix == 3:
-            print("\n  [Quiz 3 - à définir]")
+        nom, lettre = options[choix - 1]
+        resultats = quiz_secondaire(nom, lettre)
+        tous_resultats.update(resultats)
 
     print("\n=== Résultats ===")
     if tous_resultats:
