@@ -3,7 +3,9 @@
 
 Chaque composant du quiz est un Skill enregistré dans un registre.
 Les skills peuvent s'appeler entre eux par nom via le registre.
+Charge la configuration depuis quiz_config/methodologie.json.
 """
+import json
 import subprocess
 import sys
 import os
@@ -82,13 +84,16 @@ class LireChoixSkill(Skill):
 
 class FonctionSkill(Skill):
     """Skill qui exécute une fonction interne."""
-    def executer(self, question=""):
-        print(f"      >>> Je suis la fonction {question}.")
+    def executer(self, question="", message=""):
+        if message:
+            print(f"      {message}")
+        else:
+            print(f"      >>> Je suis la fonction {question}.")
 
 
 class ProgrammeSkill(Skill):
     """Skill qui exécute un programme externe."""
-    def executer(self, question=""):
+    def executer(self, question="", message=""):
         script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "action_externe.py")
         subprocess.run([sys.executable, script, question])
 
@@ -100,27 +105,29 @@ class ProgrammeSkill(Skill):
 class SousQuizSkill(Skill):
     """Skill du sous-quiz avec Vrai, Faux, Passer."""
 
-    def __init__(self, nom, action_vrai_skill=None):
+    def __init__(self, nom, action_vrai_skill=None, message_vrai="", choix_labels=None):
         super().__init__(nom, f"Sous-quiz pour {nom}")
         self.action_vrai_skill = action_vrai_skill
+        self.message_vrai = message_vrai
+        self.choix_labels = choix_labels or ["Vrai", "Faux", "Passer"]
 
     def executer(self, quiz_parent="", **kwargs):
         print(f"\n      --- Sous-quiz pour {self.nom} ---")
-        print("      1. Vrai")
-        print("      2. Faux")
-        print("      3. Passer")
+        for i, label in enumerate(self.choix_labels, start=1):
+            print(f"      {i}. {label}")
 
         choix = self.registre.executer("lire_choix",
                                        prompt=f"      Votre réponse pour {self.nom} (1/2/3) : ",
-                                       max_choix=3)
-        reponses = {1: "Vrai", 2: "Faux", 3: "Passer"}
-        print(f"      Vous avez choisi : {reponses[choix]}")
+                                       max_choix=len(self.choix_labels))
+        reponse = self.choix_labels[choix - 1]
+        print(f"      Vous avez choisi : {reponse}")
 
         if choix == 1 and self.action_vrai_skill:
-            self.registre.executer(self.action_vrai_skill, question=self.nom)
+            self.registre.executer(self.action_vrai_skill, question=self.nom,
+                                   message=self.message_vrai)
 
-        self.registre.stocker_resultat(quiz_parent, self.nom, reponses[choix])
-        return reponses[choix]
+        self.registre.stocker_resultat(quiz_parent, self.nom, reponse)
+        return reponse
 
 
 # =============================================================================
@@ -193,9 +200,10 @@ class QuizPrincipalSkill(Skill):
 class AfficherGrilleSkill(Skill):
     """Skill pour afficher la grille de résultats."""
 
-    def __init__(self, nom, quiz_config):
+    def __init__(self, nom, quiz_config, message_fin=""):
         super().__init__(nom, "Affichage grille")
         self.quiz_config = quiz_config
+        self.message_fin = message_fin
 
     def executer(self, **kwargs):
         resultats = self.registre.get_resultats()
@@ -207,15 +215,16 @@ class AfficherGrilleSkill(Skill):
         print("\n        GRILLE DE RÉSULTATS")
         print(sep)
         header = f"|{'':^{idx}}"
-        for label, _ in self.quiz_config:
+        for label, _, _ in self.quiz_config:
             header += f"|{label:^{col}}"
         header += "|"
         print(header)
         print(sep_header)
 
-        for n in range(1, 4):
+        max_questions = max(len(qs) for _, _, qs in self.quiz_config)
+        for n in range(1, max_questions + 1):
             row = f"|{n:^{idx}}"
-            for label, lettre in self.quiz_config:
+            for label, lettre, _ in self.quiz_config:
                 sous_option = f"{lettre}{n}"
                 if label in resultats and sous_option in resultats[label]:
                     val = resultats[label][sous_option]
@@ -226,15 +235,24 @@ class AfficherGrilleSkill(Skill):
             print(row)
             print(sep)
 
-        print("\nMerci d'avoir complété l'étape de validation des travaux.")
+        print(f"\n{self.message_fin}")
 
 
 # =============================================================================
 # Construction et lancement du quiz
 # =============================================================================
 
+def charger_methodologie():
+    """Charge la méthodologie du quiz depuis le fichier JSON."""
+    chemin = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "quiz_config", "methodologie.json")
+    with open(chemin, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 def construire_quiz():
-    """Construit et enregistre tous les skills du quiz."""
+    """Construit et enregistre tous les skills du quiz depuis la méthodologie."""
+    config = charger_methodologie()
     registre = SkillRegistry()
 
     # Skill utilitaire
@@ -244,29 +262,35 @@ def construire_quiz():
     registre.enregistrer("fonction", FonctionSkill("fonction"))
     registre.enregistrer("programme", ProgrammeSkill("programme"))
 
-    # Configuration : quel skill appeler pour Vrai sur chaque question
-    config_actions = {
-        "A1": "fonction",  "A2": "programme", "A3": "fonction",
-        "B1": "programme", "B2": "fonction",  "B3": "programme",
-        "C1": "fonction",  "C2": "programme", "C3": "fonction",
-    }
+    # Choix du sous-quiz depuis la config
+    choix_labels = config["sous_quiz"]["choix"]
 
-    # Skills sous-quiz
-    for nom, action in config_actions.items():
-        registre.enregistrer(nom, SousQuizSkill(nom, action_vrai_skill=action))
+    # Skills sous-quiz (depuis la méthodologie)
+    quiz_config = []
+    for quiz in config["quiz_principal"]["quiz"]:
+        lettre = quiz["lettre"]
+        question_ids = []
+        for question in quiz["questions"]:
+            qid = question["id"]
+            question_ids.append(qid)
+            registre.enregistrer(qid, SousQuizSkill(
+                qid,
+                action_vrai_skill=question["action_vrai"],
+                message_vrai=question["message_vrai"],
+                choix_labels=choix_labels
+            ))
+        quiz_config.append((quiz["nom"], lettre, question_ids))
 
     # Skills quiz secondaires
-    quiz_config = [("Quiz A", "A"), ("Quiz B", "B"), ("Quiz C", "C")]
-
-    for label, lettre in quiz_config:
-        sous_quizs = [f"{lettre}1", f"{lettre}2", f"{lettre}3"]
-        registre.enregistrer(label, QuizSecondaireSkill(label, lettre, sous_quizs))
+    for label, lettre, questions in quiz_config:
+        registre.enregistrer(label, QuizSecondaireSkill(label, lettre, questions))
 
     # Skill grille
-    registre.enregistrer("afficher_grille", AfficherGrilleSkill("afficher_grille", quiz_config))
+    registre.enregistrer("afficher_grille", AfficherGrilleSkill(
+        "afficher_grille", quiz_config, config["message_fin"]))
 
     # Skill principal
-    quiz_secondaires = [(label, label) for label, _ in quiz_config]
+    quiz_secondaires = [(label, label) for label, _, _ in quiz_config]
     registre.enregistrer("quiz_principal", QuizPrincipalSkill("quiz_principal", quiz_secondaires))
 
     return registre

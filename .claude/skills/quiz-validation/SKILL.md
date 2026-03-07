@@ -7,11 +7,23 @@ description: Quiz de validation des travaux. Se lance automatiquement au démarr
 
 Tu dois exécuter ce quiz en utilisant l'outil AskUserQuestion. Le quiz a 3 niveaux. Tu dois suivre cette logique exactement.
 
+### Source de configuration
+
+La structure du quiz (questions, actions, messages) est définie dans le fichier `quiz_config/methodologie.json`. Au démarrage du skill, lire ce fichier avec l'outil Read pour obtenir :
+- La liste des quiz (noms, lettres, questions)
+- Les actions associées à chaque question (fonction/programme)
+- Les messages à afficher quand l'utilisateur répond Vrai
+- Les choix disponibles pour le sous-quiz (Vrai, Faux, Passer)
+- Le message de fin
+
+Utiliser ces données pour construire dynamiquement les options AskUserQuestion, les résultats par défaut, et les messages d'action. Ne PAS utiliser de valeurs codées en dur.
+
 ### Persistance des résultats (survie au compactage)
 
 Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_resultats.json` après CHAQUE réponse de l'utilisateur. Cela garantit que les résultats survivent au compactage de session.
 
 **Format du fichier `.claude/quiz_resultats.json` :**
+Le format est construit dynamiquement à partir de `quiz_config/methodologie.json`. Exemple avec la config actuelle :
 ```json
 {
   "en_cours": true,
@@ -24,6 +36,7 @@ Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_
   }
 }
 ```
+Pour construire les résultats par défaut : pour chaque quiz dans `methodologie.json`, créer une entrée avec le nom du quiz, et pour chaque question, initialiser à `"--"`.
 
 **Au démarrage du skill :**
 1. Lire `.claude/quiz_resultats.json` avec l'outil Read
@@ -53,48 +66,38 @@ Note : le fichier `quiz_resultats.json` reste sur la branche de travail avec les
 
 ### Configuration des actions
 
-Quand l'utilisateur répond **Vrai**, exécuter l'action associée à la question :
-
-| Question | Action | Message à afficher |
-|----------|--------|--------------------|
-| A1 | fonction | `>>> Je suis la fonction A1.` |
-| A2 | programme | `>>> Je suis le programme A2.` |
-| A3 | fonction | `>>> Je suis la fonction A3.` |
-| B1 | programme | `>>> Je suis le programme B1.` |
-| B2 | fonction | `>>> Je suis la fonction B2.` |
-| B3 | programme | `>>> Je suis le programme B3.` |
-| C1 | fonction | `>>> Je suis la fonction C1.` |
-| C2 | programme | `>>> Je suis le programme C2.` |
-| C3 | fonction | `>>> Je suis la fonction C3.` |
+Quand l'utilisateur répond **Vrai**, consulter `quiz_config/methodologie.json` pour trouver l'action et le message associés à la question courante :
+- Chaque question dans le fichier a un champ `action_vrai` (fonction ou programme) et un champ `message_vrai`
+- Afficher le `message_vrai` de la question
 
 Quand l'utilisateur répond **Faux**, enregistrer "Faux" sans action.
 Quand l'utilisateur répond **Passer**, enregistrer "Passer" sans action.
 
 ### Niveau 1 : Quiz Principal
 
-Afficher avec AskUserQuestion (4 options, multiSelect: false) :
+Afficher avec AskUserQuestion (multiSelect: false) :
 - header: "Principal"
-- options: `1. Quiz A`, `2. Quiz B`, `3. Quiz C`, `4. Terminer`
-- Quiz A/B/C lancent le Quiz Secondaire correspondant
+- options: construire dynamiquement à partir des quiz dans `methodologie.json`, plus `Terminer` comme dernière option (max 4 options)
+- Chaque quiz lance le Quiz Secondaire correspondant
 - **Terminer** affiche la grille de résultats et le quiz est terminé
 - Les options restent TOUJOURS visibles (ne jamais retirer une option complétée)
 - Boucler jusqu'à ce que l'utilisateur choisisse **Terminer**
 
 ### Niveau 2 : Quiz Secondaire
 
-Pour chaque lettre (A, B, C), afficher avec AskUserQuestion (4 options) :
-- header: "Quiz X" (où X est la lettre)
-- options: `1. X1?`, `2. X2?`, `3. X3?`, `4. Passer`
-- X1/X2/X3 lancent le Sous-quiz correspondant
+Pour chaque quiz, afficher avec AskUserQuestion :
+- header: le nom du quiz (ex: "Quiz A")
+- options: construire dynamiquement à partir des questions du quiz dans `methodologie.json`, plus `Passer` comme dernière option
+- Chaque question lance le Sous-quiz correspondant
 - **Passer** retourne au Quiz Principal
 - Les options restent TOUJOURS visibles
 - Boucler jusqu'à ce que l'utilisateur choisisse **Passer**
 
 ### Niveau 3 : Sous-quiz
 
-Pour chaque question (X1, X2, X3), afficher avec AskUserQuestion (3 options) :
-- header: "X1" (le nom de la question)
-- options: `1. Vrai`, `2. Faux`, `3. Passer`
+Pour chaque question, afficher avec AskUserQuestion :
+- header: l'identifiant de la question (ex: "A1")
+- options: utiliser les choix définis dans `sous_quiz.choix` de `methodologie.json`
 - Si **Vrai** : afficher le message de la fonction ou du programme associé (voir tableau ci-dessus), puis retourner au Quiz Secondaire
 - Si **Faux** ou **Passer** : enregistrer la réponse et retourner au Quiz Secondaire
 
@@ -117,7 +120,7 @@ Quand l'utilisateur choisit **Terminer**, afficher ce tableau en texte :
 Merci d'avoir complété l'étape de validation des travaux.
 ```
 
-Remplacer [val] par la réponse (Vrai, Faux, Passer) ou `--` si non répondu. Centrer les valeurs dans les colonnes de 10 caractères.
+Remplacer [val] par la réponse (Vrai, Faux, Passer) ou `--` si non répondu. Centrer les valeurs dans les colonnes de 10 caractères. Utiliser `message_fin` de `methodologie.json` comme message de fin.
 
 ### Important
 

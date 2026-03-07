@@ -1,0 +1,77 @@
+{
+  "titre": "Quiz de validation des travaux",
+  "message_fin": "Merci d'avoir complété l'étape de validation des travaux.",
+
+  "quiz_principal": {
+    "titre": "Quiz Principal",
+    "quiz": [
+      {
+        "nom": "Quiz A",
+        "lettre": "A",
+        "questions": [
+          {
+            "id": "A1",
+            "action_vrai": "fonction",
+            "message_vrai": ">>> Je suis la fonction A1."
+          },
+          {
+            "id": "A2",
+            "action_vrai": "programme",
+            "message_vrai": ">>> Je suis le programme A2."
+          },
+          {
+            "id": "A3",
+            "action_vrai": "fonction",
+            "message_vrai": ">>> Je suis la fonction A3."
+          }
+        ]
+      },
+      {
+        "nom": "Quiz B",
+        "lettre": "B",
+        "questions": [
+          {
+            "id": "B1",
+            "action_vrai": "programme",
+            "message_vrai": ">>> Je suis le programme B1."
+          },
+          {
+            "id": "B2",
+            "action_vrai": "fonction",
+            "message_vrai": ">>> Je suis la fonction B2."
+          },
+          {
+            "id": "B3",
+            "action_vrai": "programme",
+            "message_vrai": ">>> Je suis le programme B3."
+          }
+        ]
+      },
+      {
+        "nom": "Quiz C",
+        "lettre": "C",
+        "questions": [
+          {
+            "id": "C1",
+            "action_vrai": "fonction",
+            "message_vrai": ">>> Je suis la fonction C1."
+          },
+          {
+            "id": "C2",
+            "action_vrai": "programme",
+            "message_vrai": ">>> Je suis le programme C2."
+          },
+          {
+            "id": "C3",
+            "action_vrai": "fonction",
+            "message_vrai": ">>> Je suis la fonction C3."
+          }
+        ]
+      }
+    ]
+  },
+
+  "sous_quiz": {
+    "choix": ["Vrai", "Faux", "Passer"]
+  }
+}
