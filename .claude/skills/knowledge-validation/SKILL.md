@@ -262,20 +262,20 @@ python3 executer_demande.py --status
 - **Si checkpoint existe avec `phase: "pre_execution"`** : le programme n'a pas encore démarré → continuer normalement (étape 1)
 - **Si pas de checkpoint** : première exécution → continuer normalement (étape 1)
 
-**Condition incontournable — Issue GitHub requise avant exécution :**
-Avant toute exécution, vérifier qu'un issue GitHub a été créé pour cette demande. Cette condition est **bloquante** : sans issue, l'exécution ne peut PAS démarrer.
+**Issue GitHub — Journalisation de la demande (non-bloquant) :**
+Avant l'exécution, tenter de créer un issue GitHub pour journaliser la demande. Cette étape est **non-bloquante** : si GitHub est indisponible, l'information est persistée sur disque et l'exécution continue normalement. La synchronisation vers GitHub se fait dès que possible.
 
 1. Vérifier l'état actuel de l'issue :
    - Lire `knowledge_resultats.json` → champ `issue_github`
-   - **Si `issue_github.numero` existe (non null)** : l'issue a été créé sur GitHub → passer à l'exécution
-   - **Si `issue_github.local_only` est `true`** : l'issue est persisté sur disque mais pas encore créé sur GitHub (fallback d'une session précédente) → tenter la synchronisation (étape 3)
+   - **Si `issue_github.numero` existe (non null)** : l'issue existe déjà sur GitHub → passer à l'exécution
+   - **Si `issue_github.local_only` est `true`** : données persistées sur disque d'une session précédente → tenter la synchronisation (étape 3), puis passer à l'exécution dans tous les cas
    - **Si `issue_github` est `null` ou absent** : créer l'issue (étape 2)
 
 2. Créer l'issue GitHub :
    a. Déterminer le repo cible : utiliser la valeur confirmée de A3 (projet). Si le projet est le repo courant, utiliser le repo courant. Sinon, utiliser `-R <owner>/<repo>`.
    b. Construire le titre : utiliser la valeur confirmée de A1 (titre)
    c. Construire le body : utiliser la valeur confirmée de A2 (description)
-   d. Créer l'issue via Bash :
+   d. Tenter la création via Bash :
       ```
       gh issue create --title "<titre_A1>" --body "<description_A2>" [-R <repo>]
       ```
@@ -291,16 +291,16 @@ Avant toute exécution, vérifier qu'un issue GitHub a été créé pour cette d
       Committer : `git add .claude/knowledge_resultats.json && git commit -m "knowledge: issue GitHub #<numero> créé"`
       Pousser : `git push -u origin <branche-courante>`
       → Passer à l'exécution.
-   f. **Si la création échoue** (erreur `gh`, pas de token, réseau indisponible) : → **Fallback sur disque** (étape 4)
+   f. **Si la création échoue** (erreur `gh`, pas de token, réseau indisponible) : → **Fallback sur disque** (étape 4), puis passer à l'exécution quand même.
 
 3. **Synchronisation d'un issue local vers GitHub** (reprise après fallback) :
    - Lire les données persistées dans `issue_github` (titre, body, repo)
    - Tenter `gh issue create --title "<titre>" --body "<body>" [-R <repo>]`
-   - **Si réussite** : mettre à jour `issue_github` avec `numero`, `url`, et `local_only: false`. Committer et pousser. → Passer à l'exécution.
-   - **Si échec** : GitHub toujours indisponible → l'exécution reste **bloquée**. Enregistrer "Faux" pour A4 et retourner au Knowledge Principal avec un message indiquant que GitHub est toujours indisponible. Les données restent persistées sur disque pour la prochaine tentative.
+   - **Si réussite** : mettre à jour `issue_github` avec `numero`, `url`, et `local_only: false`. Committer et pousser.
+   - **Si échec** : GitHub toujours indisponible. Les données restent persistées sur disque pour la prochaine session. L'exécution continue normalement.
 
 4. **Fallback sur disque** (GitHub indisponible) :
-   Persister les informations de l'issue localement pour reprise ultérieure :
+   Persister les informations de l'issue localement pour synchronisation ultérieure :
    a. Sauvegarder dans `knowledge_resultats.json` :
       ```json
       "issue_github": {
@@ -314,9 +314,9 @@ Avant toute exécution, vérifier qu'un issue GitHub a été créé pour cette d
       ```
    b. Committer : `git add .claude/knowledge_resultats.json && git commit -m "knowledge: issue persisté sur disque (GitHub indisponible)"`
    c. Pousser : `git push -u origin <branche-courante>`
-   d. L'exécution est **bloquée**. Enregistrer "Faux" pour A4 et retourner au Knowledge Principal avec un message expliquant que GitHub est indisponible et que les informations de l'issue ont été sauvegardées localement. À la prochaine session, le knowledge détectera l'issue en attente et tentera de le créer automatiquement (étape 3).
+   d. L'exécution **continue normalement**. À la prochaine session, le knowledge détectera l'issue en attente et tentera la synchronisation automatique (étape 3).
 
-**Note :** Une fois l'issue créé sur GitHub (`local_only: false`), les champs temporaires `titre` et `body` ne sont plus nécessaires dans `issue_github` — tout pointe vers le système externe. Ils peuvent être conservés ou supprimés.
+**Note :** Une fois l'issue créé sur GitHub (`local_only: false`), les champs temporaires `titre` et `body` ne sont plus nécessaires — tout pointe vers le système externe.
 
 **Exécution inline (NE PAS utiliser l'outil Skill) :**
 L'exécution se fait **directement dans le flow du knowledge-validation** sans appeler de sous-skill. Cela évite les frontières de tour qui interrompent le flow. Toutes les étapes ci-dessous s'enchaînent dans le MÊME tour de réponse.
@@ -359,7 +359,7 @@ L'exécution se fait **directement dans le flow du knowledge-validation** sans a
      - Restaurer les fichiers : `git checkout . && git clean -fd`
      - Restaurer le stash : `git stash pop`
      - Nettoyer : `rm -f .claude/preuve_execution.json`
-     - Fermer l'issue GitHub si elle a été créée sur GitHub : si `issue_github` contient un `numero` (non null, donc `local_only: false`), exécuter `gh issue close <numero> [-R <repo>]`, puis remettre `issue_github` à `null`. Si `local_only: true` (jamais synchronisé vers GitHub), simplement remettre `issue_github` à `null` (rien à fermer côté GitHub).
+     - **Ne PAS fermer l'issue GitHub** — l'issue reste ouverte pour journaliser le déroulement. Si `issue_github.numero` existe, poster un commentaire indiquant l'échec d'exécution : `gh issue comment <numero> --body "Exécution échouée — rollback effectué. Reformulation en cours." [-R <repo>]`
      - Enregistrer "Faux" pour cette question
      - Sauvegarder résultats → proposer la reformulation (voir ci-dessous)
 
@@ -497,6 +497,16 @@ Chaque knowledge a sa propre rangée d'en-têtes avec ses IDs, suivie de sa rang
 **Message de fin conditionnel :** Après la grille, vérifier si toutes les questions de tous les knowledge ont été répondues (aucune valeur `"--"` dans les résultats) :
 - **Si complet** (aucun `"--"`) : afficher `message_fin_complet` de `methodology-knowledge.md`
 - **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
+
+**Publication de la grille sur l'issue GitHub :**
+Après l'affichage de la grille, si `issue_github.numero` existe (non null, synchronisé vers GitHub), poster un commentaire sur l'issue contenant la grille de résultats :
+```
+gh issue comment <numero> --body "<grille_markdown>" [-R <repo>]
+```
+Le body du commentaire doit contenir :
+- La grille de résultats en format markdown (même contenu que celui affiché à l'utilisateur)
+- Le message de fin (complet ou incomplet)
+- Si `local_only: true` (GitHub était indisponible), ne pas tenter le commentaire — les données restent sur disque pour la prochaine session.
 
 **Fonctions post-grille :** Ces fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-10 ci-dessus :
 1. `compilation_metriques(resultats)` — Compile les métriques. Si des changements sont détectés, met `_documentation_requise = True`
