@@ -31,19 +31,20 @@ Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_
 3. Si le fichier n'existe pas : créer le fichier avec les valeurs par défaut et démarrer le quiz
 4. Si `en_cours` est `false` : le quiz est déjà terminé, ne pas relancer
 
-**Après CHAQUE réponse de l'utilisateur :**
+**Après CHAQUE réponse de l'utilisateur (persistance sur branche de travail) :**
 1. Mettre à jour les résultats dans le JSON
 2. Mettre à jour `niveau` ("principal", "secondaire", "sous_quiz") et `quiz_actif` (la lettre en cours)
 3. Sauvegarder le fichier avec l'outil Write
-4. Committer le fichier avec Bash : `git add .claude/quiz_resultats.json && git commit -m "quiz: mise à jour des résultats"`
+4. Committer sur la branche de travail : `git add .claude/quiz_resultats.json && git commit -m "quiz: mise à jour des résultats"`
+5. Pousser sur la branche de travail : `git push -u origin <branche-courante>`
 
-**Quand l'utilisateur choisit Terminer :**
+**Quand l'utilisateur choisit Terminer (synchronisation vers main) :**
 1. Mettre `en_cours` à `false`
 2. Sauvegarder le fichier
-3. Committer le fichier avec Bash : `git add .claude/quiz_resultats.json && git commit -m "quiz: validation terminée"`
-4. Pousser la branche : `git push -u origin <branche-courante>`
-5. Créer un PR avec `gh pr create --title "Quiz: validation des travaux terminée" --body "Résultats de validation" --base main` (ignorer si le PR existe déjà)
-6. Merger le PR avec `gh pr merge --merge` (ignorer si erreur)
+3. Committer sur la branche de travail : `git add .claude/quiz_resultats.json && git commit -m "quiz: validation terminée"`
+4. Pousser sur la branche de travail : `git push -u origin <branche-courante>`
+5. Créer un PR vers main : `gh pr create --title "Quiz: validation des travaux terminée" --body "Résultats de validation" --base main` (ignorer si le PR existe déjà)
+6. Merger le PR dans main : `gh pr merge --merge` (ignorer si erreur)
 7. Afficher la grille de résultats
 
 ### Configuration des actions
