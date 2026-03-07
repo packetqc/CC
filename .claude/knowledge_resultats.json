@@ -4,7 +4,7 @@
   "knowledge_actif": "B",
   "resultats": {
     "Knowledge A": {"A1": "--", "A2": "--", "A3": "--"},
-    "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
+    "Knowledge B": {"B1": "Vrai", "B2": "--", "B3": "--"},
     "Knowledge C": {"C1": "--", "C2": "--", "C3": "Faux"}
   }
 }
