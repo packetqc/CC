@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Programme qui exécute la demande initiale de l'utilisateur.
+"""Routeur de demandes utilisateur.
 
-Reçoit une chaîne de caractères en paramètre, lance un sous-processus
-pour l'exécuter, surveille son exécution et retourne :
-- Code 0 (Vrai) si l'exécution s'est bien passée
-- Code 1 (Faux) si un problème est détecté (timeout, crash, erreur)
+Analyse la chaîne de l'utilisateur, cherche des mots-clés correspondant
+à une route dans .claude/routes.json, et exécute le programme associé.
+
+- Si un mot-clé est trouvé → exécute le programme → retourne son code
+- Si aucun mot-clé ne correspond → Faux immédiatement (demande non reconnue)
 
 Maintient un journal d'actions dans .claude/journal_actions.json
 pour permettre le rollback en cas d'échec.
 
 Usage:
-  python3 executer_demande.py "commande"       # Exécuter une commande
-  python3 executer_demande.py --rollback        # Annuler les actions du journal
+  python3 executer_demande.py "demande de l'utilisateur"
+  python3 executer_demande.py --rollback
 """
 import json
 import os
@@ -19,7 +20,9 @@ import subprocess
 import sys
 
 TIMEOUT_SECONDS = 60
-JOURNAL_PATH = os.path.join(os.path.dirname(__file__), ".claude", "journal_actions.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+JOURNAL_PATH = os.path.join(BASE_DIR, ".claude", "journal_actions.json")
+ROUTES_PATH = os.path.join(BASE_DIR, ".claude", "routes.json")
 
 
 def charger_journal():
@@ -100,15 +103,36 @@ def rollback():
         except Exception as e:
             print(f"  Erreur rollback ({type_action}): {e}")
 
-    # Nettoyer le journal après rollback
     if os.path.exists(JOURNAL_PATH):
         os.remove(JOURNAL_PATH)
     print("Rollback terminé.")
 
 
+def charger_routes():
+    """Charge la table de routage depuis .claude/routes.json."""
+    if not os.path.exists(ROUTES_PATH):
+        print(f"Faux — fichier de routes introuvable : {ROUTES_PATH}")
+        return None
+    with open(ROUTES_PATH, "r") as f:
+        return json.load(f)
+
+
+def trouver_route(demande, routes):
+    """Cherche une route dont un mot-clé correspond à la demande.
+
+    Retourne la première route trouvée, ou None.
+    """
+    demande_lower = demande.lower()
+    for route in routes.get("routes", []):
+        for mot_cle in route.get("mots_cles", []):
+            if mot_cle.lower() in demande_lower:
+                return route
+    return None
+
+
 def main():
     if len(sys.argv) < 2:
-        print("Faux — aucune commande fournie.")
+        print("Faux — aucune demande fournie.")
         sys.exit(1)
 
     # Mode rollback
@@ -116,24 +140,47 @@ def main():
         rollback()
         sys.exit(0)
 
-    commande = sys.argv[1]
-    if not commande.strip():
-        print("Faux — commande vide.")
+    demande = sys.argv[1]
+    if not demande.strip():
+        print("Faux — demande vide.")
         sys.exit(1)
 
-    # Initialiser le journal pour cette exécution
+    # Charger les routes
+    config_routes = charger_routes()
+    if config_routes is None:
+        sys.exit(1)
+
+    # Chercher une route correspondante
+    route = trouver_route(demande, config_routes)
+
+    if route is None:
+        print(f"Faux — aucun programme ne correspond à cette demande.")
+        print(f"Demande reçue : \"{demande}\"")
+        print("Aucun mot-clé reconnu dans la table de routage.")
+        sys.exit(1)
+
+    # Route trouvée — exécuter le programme associé
+    programme = route["programme"]
+    route_id = route.get("id", "inconnu")
+    description = route.get("description", "")
+
+    print(f"Route trouvée : [{route_id}] {description}")
+    print(f"Programme : {programme}")
+
+    # Initialiser le journal
     journal = {"actions": []}
     sauvegarder_journal(journal)
 
-    # Enregistrer la commande principale comme action
     enregistrer_action(journal, "commande_exec", {
-        "commande": commande,
+        "route_id": route_id,
+        "commande": programme,
+        "demande_originale": demande,
         "rollback_cmd": None,
     })
 
     try:
         resultat = subprocess.run(
-            commande,
+            programme,
             shell=True,
             capture_output=True,
             text=True,

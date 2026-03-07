@@ -19,6 +19,25 @@ Ce skill reçoit en argument la chaîne de caractères correspondant à la deman
    - Si code de retour = 0 : afficher la sortie et indiquer **Vrai**
    - Si code de retour != 0 : afficher la sortie et indiquer **Faux**
 
-### Évolution future
+### Routage par mots-clés
 
-Ce skill est actuellement un point d'entrée unique. À terme, il pourra analyser les mots-clés dans la chaîne de l'utilisateur pour router la demande vers des skills spécialisés selon la nature de la demande (ex: skill de build, skill de test, skill de déploiement, etc.).
+`executer_demande.py` est un **routeur** : il ne lance PAS la chaîne directement en bash.
+
+- Il charge la table de routage depuis `.claude/routes.json`
+- Il analyse la chaîne de l'utilisateur pour y trouver des mots-clés
+- **Si un mot-clé correspond** → exécute le programme associé à cette route → retourne son code de retour
+- **Si aucun mot-clé ne correspond** → retourne immédiatement **Faux** (code 1) sans aucune exécution
+
+Cela empêche Claude de traiter la demande lui-même et de retourner un faux positif.
+
+### Ajouter une nouvelle route
+
+Éditer `.claude/routes.json` et ajouter une entrée :
+```json
+{
+  "id": "mon-programme",
+  "mots_cles": ["mot1", "mot2"],
+  "programme": "python3 mon_script.py",
+  "description": "Description de ce que fait le programme"
+}
+```

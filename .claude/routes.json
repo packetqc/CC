@@ -1,0 +1,23 @@
+{
+  "description": "Table de routage des demandes utilisateur. Chaque route associe des mots-clés à un programme à exécuter.",
+  "routes": [
+    {
+      "id": "build",
+      "mots_cles": ["build", "compiler", "compilation"],
+      "programme": "echo 'TODO: programme de build à implémenter'",
+      "description": "Compiler le projet"
+    },
+    {
+      "id": "test",
+      "mots_cles": ["test", "tester", "tests"],
+      "programme": "echo 'TODO: programme de test à implémenter'",
+      "description": "Exécuter les tests"
+    },
+    {
+      "id": "deploy",
+      "mots_cles": ["deploy", "déployer", "déploiement"],
+      "programme": "echo 'TODO: programme de déploiement à implémenter'",
+      "description": "Déployer l'application"
+    }
+  ]
+}
