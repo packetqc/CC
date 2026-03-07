@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Programme externe appelé par certaines questions du quiz."""
+"""Programme externe appelé par certaines questions du knowledge."""
 import sys
 
 

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Quiz imbriqué à 4 niveaux avec maximum 4 choix par niveau.
+"""Knowledge imbriqué à 4 niveaux avec maximum 4 choix par niveau.
 
-Charge la configuration depuis quiz_config/methodologie.md.
+Charge la configuration depuis knowledge_config/methodologie.md.
 """
 import subprocess
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from quiz_config import charger_methodologie
+from knowledge_config import charger_methodologie
 
 
 def construire_actions(config):
     """Construit le dictionnaire ACTIONS_VRAI à partir de la config."""
     actions = {}
-    for quiz in config["quiz_principal"]["quiz"]:
-        for question in quiz["questions"]:
+    for knowledge in config["knowledge_principal"]["knowledge"]:
+        for question in knowledge["questions"]:
             qid = question["id"]
             action_type = question["action_vrai"]
             message = question["message_vrai"]
@@ -27,11 +27,11 @@ def construire_actions(config):
 
 
 def construire_options(config):
-    """Construit la liste des options du quiz principal à partir de la config."""
+    """Construit la liste des options du knowledge principal à partir de la config."""
     options = []
-    for quiz in config["quiz_principal"]["quiz"]:
-        options.append((quiz["nom"], quiz["lettre"],
-                        [q["id"] for q in quiz["questions"]]))
+    for knowledge in config["knowledge_principal"]["knowledge"]:
+        options.append((knowledge["nom"], knowledge["lettre"],
+                        [q["id"] for q in knowledge["questions"]]))
     return options
 
 
@@ -60,12 +60,12 @@ def appeler_programme_externe(nom, message):
 
 
 # =============================================================================
-# Logique du quiz
+# Logique du knowledge
 # =============================================================================
 
-def sous_quiz(nom, actions_vrai, choix_labels):
-    """Sous-quiz à 3 choix : Vrai, Faux, Passer."""
-    print(f"\n      --- Sous-quiz pour {nom} ---")
+def sous_knowledge(nom, actions_vrai, choix_labels):
+    """Sous-knowledge à 3 choix : Vrai, Faux, Passer."""
+    print(f"\n      --- Sous-knowledge pour {nom} ---")
     for i, label in enumerate(choix_labels, start=1):
         print(f"      {i}. {label}")
 
@@ -80,12 +80,12 @@ def sous_quiz(nom, actions_vrai, choix_labels):
     return reponse
 
 
-def quiz_secondaire(nom, questions, actions_vrai, choix_labels):
-    """Quiz secondaire avec sous-options + Passer."""
+def knowledge_secondaire(nom, questions, actions_vrai, choix_labels):
+    """Knowledge secondaire avec sous-options + Passer."""
     tous_resultats = {}
 
     while True:
-        print(f"\n  == Quiz Secondaire ({nom}) ==")
+        print(f"\n  == Knowledge Secondaire ({nom}) ==")
         for i, qid in enumerate(questions, start=1):
             print(f"  {i}. {qid}?")
         print(f"  {len(questions) + 1}. Passer")
@@ -93,20 +93,20 @@ def quiz_secondaire(nom, questions, actions_vrai, choix_labels):
         choix = lire_choix(f"  Votre choix (1-{len(questions) + 1}) : ", len(questions) + 1)
 
         if choix == len(questions) + 1:
-            print(f"  Vous passez le quiz {nom}.")
+            print(f"  Vous passez le knowledge {nom}.")
             break
 
         qid = questions[choix - 1]
-        reponse = sous_quiz(qid, actions_vrai, choix_labels)
+        reponse = sous_knowledge(qid, actions_vrai, choix_labels)
         tous_resultats[qid] = reponse
 
     return tous_resultats
 
 
-def afficher_grille(options, resultats_par_quiz, message_fin):
-    """Affiche les résultats sous forme de tableau inversé (quiz en colonnes)."""
+def afficher_grille(options, resultats_par_knowledge, message_fin):
+    """Affiche les résultats sous forme de tableau inversé (knowledge en colonnes)."""
     idx = 5
-    col = 10
+    col = max(10, max(len(nom) + 2 for nom, _, _ in options))
     sep = "+" + "-" * idx + ("+" + "-" * col) * len(options) + "+"
     sep_header = "+" + "=" * idx + ("+" + "=" * col) * len(options) + "+"
 
@@ -124,8 +124,8 @@ def afficher_grille(options, resultats_par_quiz, message_fin):
         row = f"|{n:^{idx}}"
         for nom, lettre, questions in options:
             qid = f"{lettre}{n}"
-            if nom in resultats_par_quiz and qid in resultats_par_quiz[nom]:
-                val = resultats_par_quiz[nom][qid]
+            if nom in resultats_par_knowledge and qid in resultats_par_knowledge[nom]:
+                val = resultats_par_knowledge[nom][qid]
             else:
                 val = "--"
             row += f"|{val:^{col}}"
@@ -136,17 +136,17 @@ def afficher_grille(options, resultats_par_quiz, message_fin):
     print(f"\n{message_fin}")
 
 
-def quiz_principal():
-    """Quiz principal. Charge la config et lance le quiz."""
+def knowledge_principal():
+    """Knowledge principal. Charge la config et lance le knowledge."""
     config = charger_methodologie()
     actions_vrai = construire_actions(config)
     options = construire_options(config)
-    choix_labels = config["sous_quiz"]["choix"]
+    choix_labels = config["sous_knowledge"]["choix"]
     message_fin = config["message_fin"]
-    resultats_par_quiz = {}
+    resultats_par_knowledge = {}
 
     while True:
-        print(f"\n=== {config['quiz_principal']['titre']} ===")
+        print(f"\n=== {config['knowledge_principal']['titre']} ===")
         for i, (nom, _, _) in enumerate(options, start=1):
             print(f"{i}. {nom}")
         print(f"{len(options) + 1}. Terminer")
@@ -158,13 +158,13 @@ def quiz_principal():
             break
 
         nom, lettre, questions = options[choix - 1]
-        resultats = quiz_secondaire(nom, questions, actions_vrai, choix_labels)
-        if nom not in resultats_par_quiz:
-            resultats_par_quiz[nom] = {}
-        resultats_par_quiz[nom].update(resultats)
+        resultats = knowledge_secondaire(nom, questions, actions_vrai, choix_labels)
+        if nom not in resultats_par_knowledge:
+            resultats_par_knowledge[nom] = {}
+        resultats_par_knowledge[nom].update(resultats)
 
-    afficher_grille(options, resultats_par_quiz, message_fin)
+    afficher_grille(options, resultats_par_knowledge, message_fin)
 
 
 if __name__ == "__main__":
-    quiz_principal()
+    knowledge_principal()

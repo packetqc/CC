@@ -1,16 +1,16 @@
-# Quiz de validation des travaux
+# Knowledge de validation des travaux
 
 ## Message de fin
 
 Merci d'avoir complété l'étape de validation des travaux.
 
-## Choix du sous-quiz
+## Choix du sous-knowledge
 
 Vrai, Faux, Passer
 
-## Quiz Principal
+## Knowledge Principal
 
-### Quiz A (lettre: A)
+### Knowledge A (lettre: A)
 
 | ID | Action    | Message                        |
 |----|-----------|--------------------------------|
@@ -18,7 +18,7 @@ Vrai, Faux, Passer
 | A2 | programme | >>> Je suis le programme A2.   |
 | A3 | fonction  | >>> Je suis la fonction A3.    |
 
-### Quiz B (lettre: B)
+### Knowledge B (lettre: B)
 
 | ID | Action    | Message                        |
 |----|-----------|--------------------------------|
@@ -26,7 +26,7 @@ Vrai, Faux, Passer
 | B2 | fonction  | >>> Je suis la fonction B2.    |
 | B3 | programme | >>> Je suis le programme B3.   |
 
-### Quiz C (lettre: C)
+### Knowledge C (lettre: C)
 
 | ID | Action    | Message                        |
 |----|-----------|--------------------------------|

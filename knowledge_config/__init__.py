@@ -1,20 +1,20 @@
-"""Module de chargement de la méthodologie du quiz depuis un fichier Markdown."""
+"""Module de chargement de la méthodologie du knowledge depuis un fichier Markdown."""
 import os
 import re
 
 
 def charger_methodologie(chemin=None):
-    """Charge la méthodologie du quiz depuis le fichier Markdown.
+    """Charge la méthodologie du knowledge depuis le fichier Markdown.
 
-    Retourne un dictionnaire avec la même structure que l'ancien JSON :
+    Retourne un dictionnaire avec la structure :
     {
         "titre": "...",
         "message_fin": "...",
-        "quiz_principal": {
-            "titre": "Quiz Principal",
-            "quiz": [{"nom": "...", "lettre": "...", "questions": [...]}]
+        "knowledge_principal": {
+            "titre": "Knowledge Principal",
+            "knowledge": [{"nom": "...", "lettre": "...", "questions": [...]}]
         },
-        "sous_quiz": {"choix": ["Vrai", "Faux", "Passer"]}
+        "sous_knowledge": {"choix": ["Vrai", "Faux", "Passer"]}
     }
     """
     if chemin is None:
@@ -27,8 +27,8 @@ def charger_methodologie(chemin=None):
     config = {
         "titre": "",
         "message_fin": "",
-        "quiz_principal": {"titre": "Quiz Principal", "quiz": []},
-        "sous_quiz": {"choix": []},
+        "knowledge_principal": {"titre": "Knowledge Principal", "knowledge": []},
+        "sous_knowledge": {"choix": []},
     }
 
     # Titre principal (# ...)
@@ -42,17 +42,17 @@ def charger_methodologie(chemin=None):
     if m:
         config["message_fin"] = m.group(1).strip()
 
-    # Choix du sous-quiz : liste après ## Choix du sous-quiz
-    m = re.search(r"## Choix du sous-quiz\s*\n\s*\n(.+?)(?:\n\s*\n|\Z)",
+    # Choix du sous-knowledge : liste après ## Choix du sous-knowledge
+    m = re.search(r"## Choix du sous-knowledge\s*\n\s*\n(.+?)(?:\n\s*\n|\Z)",
                   contenu, re.DOTALL)
     if m:
-        config["sous_quiz"]["choix"] = [
+        config["sous_knowledge"]["choix"] = [
             c.strip() for c in m.group(1).strip().split(",")
         ]
 
-    # Quiz : sections ### Nom (lettre: X) avec tableaux
-    pattern_quiz = r"### (.+?) \(lettre: (\w+)\)\s*\n(.*?)(?=\n### |\Z)"
-    for match in re.finditer(pattern_quiz, contenu, re.DOTALL):
+    # Knowledge : sections ### Nom (lettre: X) avec tableaux
+    pattern_knowledge = r"### (.+?) \(lettre: (\w+)\)\s*\n(.*?)(?=\n### |\Z)"
+    for match in re.finditer(pattern_knowledge, contenu, re.DOTALL):
         nom = match.group(1).strip()
         lettre = match.group(2).strip()
         bloc_tableau = match.group(3)
@@ -73,7 +73,7 @@ def charger_methodologie(chemin=None):
                     "message_vrai": colonnes[2],
                 })
 
-        config["quiz_principal"]["quiz"].append({
+        config["knowledge_principal"]["knowledge"].append({
             "nom": nom,
             "lettre": lettre,
             "questions": questions,
