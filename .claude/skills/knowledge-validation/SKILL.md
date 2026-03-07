@@ -152,13 +152,23 @@ Si on entre dans le Knowledge Secondaire et que `demande_reformulee` est non `nu
 - Les questions déjà répondues restent accessibles pour raffinement optionnel
 - Les prérequis de `executer_demande` sont déjà satisfaits (les réponses précédentes comptent)
 
+### Règle critique : toujours afficher le menu secondaire
+
+**IMPORTANT** : Le menu du Knowledge Secondaire (niveau 2) doit TOUJOURS être affiché avec AskUserQuestion et attendre le choix explicite de l'utilisateur, même si toutes les questions sont pré-remplies. Le système ne doit JAMAIS itérer automatiquement à travers les questions pré-remplies. Le flow est :
+1. Afficher le menu secondaire → attendre que l'utilisateur clique sur une option
+2. Si l'utilisateur clique sur une question pré-remplie → niveau 3 affiche "déjà répondu" et retourne au menu secondaire
+3. Si l'utilisateur clique sur "Exécuter la demande" → lancer l'exécution
+4. Si l'utilisateur fait Skip → retourner au principal ou terminer
+
+Les questions pré-remplies sont affichées dans le menu avec un indicateur visuel (ex: "A1 ✓" dans la description) mais ne déclenchent AUCUN comportement automatique. C'est l'utilisateur qui décide quand exécuter.
+
 ### Niveau 3 : Sous-knowledge
 
 **Saut automatique des questions pré-remplies :**
-Avant d'afficher le choix Vrai/Faux/Passer, vérifier dans `knowledge_resultats.json` si la question a déjà une réponse (≠ `"--"`). Si oui :
+Quand l'utilisateur sélectionne explicitement une question pré-remplie au niveau 2, vérifier dans `knowledge_resultats.json` si la question a déjà une réponse (≠ `"--"`). Si oui :
 - Afficher : `"[question] : déjà répondu → [valeur]"` (ex: `"A1 : déjà répondu → Vrai"`)
 - Ne PAS demander de choix à l'utilisateur
-- Retourner directement au Knowledge Secondaire
+- Retourner directement au Knowledge Secondaire (qui DOIT se réafficher et attendre un nouveau choix)
 - L'utilisateur peut toujours re-sélectionner manuellement cette question au niveau 2 pour **écraser** la valeur pré-remplie (dans ce cas, afficher normalement le choix Vrai/Faux/Passer avec une option supplémentaire "Garder [valeur actuelle]")
 
 Pour chaque question, vérifier d'abord le type d'action dans `methodology-knowledge.md` :
