@@ -33,6 +33,7 @@ Le format est construit dynamiquement à partir de `knowledge_config/methodologi
   "knowledge_actif": null,
   "page_principal": 0,
   "page_secondaire": 0,
+  "demande_executee": false,
   "resultats": {
     "Knowledge A": {"A1": "--", "A2": "--", "A3": "--"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
@@ -97,12 +98,23 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 
 ### Niveau 1 : Knowledge Principal
 
-Afficher avec AskUserQuestion (multiSelect: false) :
-- header: "Principal"
-- Lire tous les knowledge depuis `methodologie.md`
-- Appliquer la pagination (voir règle ci-dessus) avec `Terminer` comme option de contrôle
-- Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
-- Chaque knowledge lance le Knowledge Secondaire correspondant
+**Mode initial (demande_executee = false) :**
+- Afficher avec AskUserQuestion (multiSelect: false) :
+  - header: "Principal"
+  - options: `Exécuter la demande` + `Terminer` (2 options seulement)
+- L'utilisateur DOIT exécuter sa demande avant d'accéder au questionnaire de validation
+- Quand l'utilisateur choisit `Exécuter la demande` : appeler le skill `commande-utilisateur` avec le message initial de session, enregistrer le résultat (Vrai/Faux) dans la 3e question du 1er knowledge, puis mettre `demande_executee` à `true`
+- **Terminer** affiche la grille de résultats et le knowledge est terminé
+
+**Mode complet (demande_executee = true) :**
+- Afficher avec AskUserQuestion (multiSelect: false) :
+  - header: "Principal"
+  - La 1re option est TOUJOURS `Exécuter la demande` (permet de relancer la demande)
+  - Suivie des knowledge lus depuis `methodologie.md`
+  - Appliquer la pagination sur l'ensemble (Exécuter la demande + knowledge) avec `Terminer` comme option de contrôle
+- Si l'utilisateur choisit `Exécuter la demande` : relancer l'exécution et mettre à jour le résultat
+- Si l'utilisateur choisit un knowledge : lancer le Knowledge Secondaire correspondant (questionnaire de validation)
+- Si l'utilisateur choisit `Suivant ▸` : incrémenter la page et réafficher
 - **Terminer** affiche la grille de résultats et le knowledge est terminé
 - Les options restent TOUJOURS visibles (ne jamais retirer une option complétée)
 - Boucler jusqu'à ce que l'utilisateur choisisse **Terminer**
