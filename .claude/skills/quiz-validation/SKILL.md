@@ -28,8 +28,8 @@ Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_
 **Au démarrage du skill :**
 1. Lire `.claude/quiz_resultats.json` avec l'outil Read
 2. Si le fichier existe et `en_cours` est `true` : reprendre le quiz au niveau indiqué (survie au compactage)
-3. Si le fichier n'existe pas : créer le fichier avec les valeurs par défaut et démarrer le quiz
-4. Le quiz se lance à CHAQUE nouvelle session (le fichier est supprimé à la fin)
+3. Si le fichier existe et `en_cours` est `false` : c'est un résidu d'une session précédente. Supprimer le fichier (`rm .claude/quiz_resultats.json && git add .claude/quiz_resultats.json && git commit -m "quiz: nettoyage début de session" && git push -u origin <branche-courante>`), puis créer un nouveau fichier et démarrer le quiz
+4. Si le fichier n'existe pas : créer le fichier avec les valeurs par défaut et démarrer le quiz
 
 **Après CHAQUE réponse de l'utilisateur (persistance sur branche de travail) :**
 1. Mettre à jour les résultats dans le JSON
@@ -49,7 +49,7 @@ Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_
    - Via git direct : `git fetch origin main && git checkout main && git merge <branche> && git push origin main && git checkout <branche>`
    - Si toutes échouent : afficher "Note: le merge vers main doit être fait manuellement."
 6. Afficher la grille de résultats
-7. Supprimer le fichier JSON pour que le quiz redémarre à la prochaine session : `rm .claude/quiz_resultats.json && git add .claude/quiz_resultats.json && git commit -m "quiz: nettoyage pour prochaine session" && git push -u origin <branche-courante>`
+Note : le fichier `quiz_resultats.json` reste sur la branche de travail avec les résultats. Il sera nettoyé au démarrage de la prochaine session.
 
 ### Configuration des actions
 
