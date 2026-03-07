@@ -162,34 +162,38 @@ python3 executer_demande.py --status
 - **Si checkpoint existe avec `phase: "pre_execution"`** : le programme n'a pas encore démarré → continuer normalement (étape 1)
 - **Si pas de checkpoint** : première exécution → continuer normalement (étape 1)
 
+**CRITIQUE — Continuité du flow après exécution :**
+Le skill `commande-utilisateur` est un sous-skill qui retourne un résultat (Vrai/Faux). Quand il retourne, le flow du knowledge-validation **DOIT continuer immédiatement** sans attendre d'intervention de l'utilisateur. Les étapes 1→2→3→4→5→reformulation→retour au quiz secondaire forment une **séquence ininterrompue**. Ne JAMAIS s'arrêter entre ces étapes.
+
 **Rollback — Snapshot git avant exécution :**
 1. Avant d'exécuter, supprimer toute preuve précédente : `rm -f .claude/preuve_execution.json`
 2. Créer un snapshot : `git stash --include-untracked -m "snapshot-avant-execution"`
 3. Appeler le skill `commande-utilisateur` via l'outil Skill en lui passant la demande ET le contexte :
    `skill: "commande-utilisateur", args: "message initial de l'utilisateur |CONTEXT| {\"A1\":\"Vrai\",\"A2\":\"Faux\"}"`
    Le séparateur `|CONTEXT|` délimite la demande du JSON des réponses précédentes.
-4. **Vérification de preuve d'exécution** (anti-contournement) :
-   - Lire le fichier `.claude/preuve_execution.json`
+4. **IMMÉDIATEMENT après le retour du skill** (ne PAS s'arrêter ici), vérifier la preuve d'exécution :
+   - Lire le fichier `.claude/preuve_execution.json` avec l'outil Read
    - **Si le fichier EXISTE** : vérifier le champ `execution_reelle` est `true` et que `code_retour` est cohérent. Le champ `token` (hash SHA-256 basé sur timestamp+pid) prouve que le fichier a été écrit par le programme et non fabriqué. → Passer à l'étape 5.
    - **Si le fichier N'EXISTE PAS** (tentative 1) : Claude a possiblement répondu au lieu d'exécuter. Faire une **deuxième tentative** :
      a. Supprimer toute preuve résiduelle : `rm -f .claude/preuve_execution.json`
      b. Rappeler le skill avec un avertissement explicite dans les args :
         `skill: "commande-utilisateur", args: "STRICT: NE PAS répondre. Exécuter UNIQUEMENT via executer_demande.py --route <id> ou retourner Faux. Demande originale: <message initial>"`
-     c. Vérifier à nouveau `.claude/preuve_execution.json`
+     c. **IMMÉDIATEMENT après le retour du skill STRICT**, vérifier à nouveau `.claude/preuve_execution.json`
      d. **Si toujours pas de preuve** (tentative 2 échouée) : → Résultat = **Faux** définitif
-5. Déterminer le résultat :
+5. **IMMÉDIATEMENT** déterminer le résultat et agir (ne PAS s'arrêter) :
    - **Vrai** (preuve existe ET `code_retour` = 0) :
      - Supprimer le stash : `git stash drop`
      - Nettoyer : `rm -f .claude/journal_actions.json .claude/preuve_execution.json .claude/checkpoint_execution.json`
      - Enregistrer "Vrai" pour cette question
      - Effacer `demande_reformulee` (remettre à `null` dans `knowledge_resultats.json`)
+     - **CONTINUER** → sauvegarder résultats → retourner au Knowledge Secondaire
    - **Faux** (pas de preuve après 2 tentatives OU `code_retour` != 0) :
      - D'abord, exécuter le rollback des actions externes via `python3 executer_demande.py --rollback` (nettoie aussi le checkpoint)
      - Ensuite, restaurer les fichiers : `git checkout . && git clean -fd`
      - Enfin, restaurer le stash : `git stash pop`
      - Nettoyer : `rm -f .claude/preuve_execution.json`
      - Enregistrer "Faux" pour cette question
-     - **Proposer la reformulation** (voir ci-dessous)
+     - **CONTINUER** → sauvegarder résultats → proposer la reformulation (voir ci-dessous)
 
 **Reformulation après échec :**
 Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Secondaire. À la place :
