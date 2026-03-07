@@ -77,7 +77,8 @@ Quand l'utilisateur répond **Passer**, enregistrer "Passer" sans action.
 
 Afficher avec AskUserQuestion (multiSelect: false) :
 - header: "Principal"
-- options: construire dynamiquement à partir des knowledge dans `methodologie.md`, plus `Terminer` comme dernière option (max 4 options)
+- options: construire dynamiquement à partir des knowledge dans `methodologie.md`, plus `Terminer` comme dernière option
+- **Contrainte AskUserQuestion** : maximum 4 options (2 à 4). `Terminer` compte comme une option, donc maximum 3 knowledge au niveau principal. Si `methodologie.md` contient plus de 3 knowledge, ne garder que les 3 premiers
 - Chaque knowledge lance le Knowledge Secondaire correspondant
 - **Terminer** affiche la grille de résultats et le knowledge est terminé
 - Les options restent TOUJOURS visibles (ne jamais retirer une option complétée)
@@ -88,6 +89,7 @@ Afficher avec AskUserQuestion (multiSelect: false) :
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
 - options: construire dynamiquement à partir des questions du knowledge dans `methodologie.md`, plus `Passer` comme dernière option
+- **Contrainte AskUserQuestion** : maximum 4 options (2 à 4). `Passer` compte comme une option, donc maximum 3 questions par knowledge. Si un knowledge contient plus de 3 questions, ne garder que les 3 premières
 - Pour les questions de type `executer_demande`, afficher le label "Exécuter la demande" au lieu de l'identifiant de la question (ex: au lieu de "A3", afficher "Exécuter la demande")
 - Chaque question lance le Sous-knowledge correspondant
 - **Passer** retourne au Knowledge Principal
