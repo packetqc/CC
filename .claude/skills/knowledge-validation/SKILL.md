@@ -9,7 +9,7 @@ Tu dois exécuter ce knowledge en utilisant l'outil AskUserQuestion. Le knowledg
 
 ### Source de configuration
 
-La structure du knowledge (questions, actions, messages) est définie dans le fichier `knowledge_config/methodology-knowledge.md`. Au démarrage du skill, lire ce fichier avec l'outil Read pour obtenir :
+La structure du knowledge (questions, actions, messages) est définie dans le fichier `methodology/methodology-knowledge.md`. Au démarrage du skill, lire ce fichier avec l'outil Read pour obtenir :
 - La liste des knowledge (noms, lettres, questions)
 - Les actions associées à chaque question (fonction/programme)
 - Les messages à afficher quand l'utilisateur répond Vrai
@@ -19,7 +19,7 @@ La structure du knowledge (questions, actions, messages) est définie dans le fi
 **Format bilingue :** Le fichier de configuration supporte le français et l'anglais :
 - **Titre** : `# Titre FR | Title EN`
 - **Messages** : préfixés `FR:` et `EN:` sur des lignes séparées
-- **Noms de knowledge** : `### Nom FR | Name EN (lettre: X)` — optionnel : `(lettre: X, methodology: methodology-name)` pour associer une méthodologie spécifique (fichier `knowledge_config/methodologies/<methodology-name>.md`)
+- **Noms de knowledge** : `### Nom FR | Name EN (lettre: X)` — optionnel : `(lettre: X, methodology: methodology-name)` pour associer une méthodologie spécifique (fichier `methodology/<methodology-name>.md`)
 - **Tableaux** : 6 colonnes — `| ID | Choix FR | Choix EN | Action | Message FR | Message EN |`
   - `ID` : identifiant technique (A1, B2, D1...)
   - `Choix FR` / `Choix EN` : label affiché dans AskUserQuestion selon la langue
@@ -40,7 +40,7 @@ Utiliser ces données pour construire dynamiquement les options AskUserQuestion,
 Les résultats du knowledge DOIVENT être sauvegardés dans le fichier `.claude/knowledge_resultats.json` après CHAQUE réponse de l'utilisateur. Cela garantit que les résultats survivent au compactage de session.
 
 **Format du fichier `.claude/knowledge_resultats.json` :**
-Le format est construit dynamiquement à partir de `knowledge_config/methodology-knowledge.md`. Exemple avec la config actuelle :
+Le format est construit dynamiquement à partir de `methodology/methodology-knowledge.md`. Exemple avec la config actuelle :
 ```json
 {
   "en_cours": true,
@@ -50,6 +50,8 @@ Le format est construit dynamiquement à partir de `knowledge_config/methodology
   "page_secondaire": 0,
   "demande_executee": false,
   "demande_reformulee": null,
+  "issue_github": null,
+  "valeurs_detectees": {},
   "resultats": {
     "Knowledge A": {"A1": "--", "A2": "--", "A3": "--"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
@@ -110,7 +112,7 @@ Note : le fichier `knowledge_resultats.json` reste sur la branche de travail ave
 
 ### Configuration des actions
 
-Quand l'utilisateur répond **Vrai**, consulter `knowledge_config/methodology-knowledge.md` pour trouver l'action et le message associés à la question courante :
+Quand l'utilisateur répond **Vrai**, consulter `methodology/methodology-knowledge.md` pour trouver l'action et le message associés à la question courante :
 - Chaque question dans le fichier a un champ `action_vrai` (fonction ou programme) et un champ `message_vrai`
 - Afficher le `message_vrai` de la question
 
@@ -146,6 +148,7 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
   - header: "Principal"
   - question: format `"Choisir. (Si vous avez terminé, appuyez sur Skip)"` — en anglais : `"Choose. (If you are done, press Skip)"`
   - Tous les knowledge lus depuis `methodology-knowledge.md` (le 1er knowledge reste toujours accessible pour relancer l'exécution via sa 3e question)
+  - **Description des options** : utiliser une chaîne vide `""` comme description pour chaque option au niveau principal. Ne PAS afficher "Knowledge A", "Knowledge B", etc. en sous-titre.
   - Appliquer la pagination sans option de contrôle (Skip natif remplace Terminer)
 - Si l'utilisateur choisit un knowledge : lancer le Knowledge Secondaire correspondant (questionnaire de validation)
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page et réafficher
@@ -155,13 +158,52 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 
 ### Niveau 2 : Knowledge Secondaire
 
+**Décodage et détection automatique des valeurs :**
+À la première entrée dans un Knowledge Secondaire, AVANT d'afficher le menu, Claude doit décoder la demande de l'utilisateur et auto-détecter les valeurs correspondant à chaque question (sauf `executer_demande` et `tous`).
+
+**Parsing de la demande utilisateur :**
+Le message initial (ou `demande_reformulee` si non null) est structuré ainsi :
+1. **Ligne 1** = la commande de l'utilisateur (contient souvent le titre). Exemples : `project create Mon Super Projet`, `build mon-app`
+2. **Texte après la ligne 1** (tout ce qui suit, SAUF le bloc JSON `{"resultats": ...}` de pré-remplissage) = la **description** de la demande
+3. Le bloc JSON de pré-remplissage (s'il existe) est ignoré pour le décodage — il a déjà été traité au démarrage
+
+**Extraction des valeurs :**
+- **A1 (titre)** : extraire le titre depuis la ligne 1 de la commande (ex: dans `project create Mon Super Projet` → titre = `"Mon Super Projet"`)
+- **A2 (description)** : extraire tout le texte après la ligne 1 (hors bloc JSON). C'est la description brute de l'utilisateur. Claude doit aussi produire une **version synthétisée** (résumé concis de la description)
+- **A3 (projet)** : détecter le projet GitHub associé à la demande. Stratégie de détection en cascade :
+  1. **Chercher dans la demande** : analyser le titre (A1) et la description (A2) pour un nom de repo GitHub explicite (ex: `project create MPLIB`, `issue dans CC`, `pour le projet test-project-5`)
+  2. **Chercher dans le contexte local** : vérifier le repo Git courant via `git remote get-url origin` pour extraire le nom du repo (ex: `packetqc/CC` → `CC`)
+  3. **Chercher sur GitHub** : si pas trouvé, utiliser `gh repo list --json name,description --limit 30` pour lister les repos disponibles et trouver le meilleur match sémantique avec la demande
+  4. **Si aucun match** : mettre `null` — l'utilisateur devra spécifier via le champ texte (Other) au niveau 3
+  - La valeur stockée est le nom du repo (ex: `"CC"`, `"MPLIB"`, `"test-project-5"`)
+  - **Important** : `gh` CLI utilise la variable d'environnement `GH_TOKEN` déjà présente pour l'authentification. Ne pas demander de token à l'utilisateur.
+- **Autres questions** : détecter selon le champ `choix` comme indice sémantique et le contexte du projet
+
+**Format de stockage dans `valeurs_detectees` de `knowledge_resultats.json` :**
+```json
+"valeurs_detectees": {
+  "A1": {"valeur": "Mon Super Projet", "original": null},
+  "A2": {"valeur": "Synthèse concise de la description", "original": "Le texte complet de la description fournie par l'utilisateur sur plusieurs lignes..."},
+  "A3": {"valeur": "CC", "original": null}
+}
+```
+- `valeur` : la valeur synthétisée/nettoyée par Claude — c'est ce qui sera utilisé par le système en aval
+- `original` : le texte brut extrait de la demande (utile surtout pour A2 où l'utilisateur a écrit un long texte). `null` si pas de texte brut distinct (ex: A1 où la valeur est déjà concise)
+- Si une valeur ne peut pas être détectée, mettre `{"valeur": null, "original": null}`
+- Les valeurs détectées sont recalculées à chaque entrée dans le knowledge secondaire (pour tenir compte de reformulations)
+
+**Affichage du menu :**
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
 - question: format `"Choisir parmi les options suivantes. (Pour passer, appuyez sur Skip)"` — en anglais : `"Choose from the following options. (To skip, press Skip)"`
 - Lire toutes les questions du knowledge depuis `methodology-knowledge.md`
+- **Options (non-executer_demande, non-tous)** :
+  - label: le champ `choix` de la question (ex: "Confirmez le titre")
+  - description: la valeur `valeur` de `valeurs_detectees[ID]` (ex: `"Mon Super Projet"`) ou `"(non détecté)"` si `valeur` est null. Si la question est déjà répondue, ajouter un indicateur : `"Mon Super Projet ✓"`
+- **Options `executer_demande`** : label "Exécuter la demande", description comme avant
+- **Options `tous`** : label du champ `choix`, description vide
 - Appliquer la pagination sans option de contrôle (Skip natif remplace Passer)
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
-- Pour les questions de type `executer_demande`, afficher le label "Exécuter la demande" au lieu de l'identifiant de la question
 - Chaque question lance le Sous-knowledge correspondant
 - **Skip** (bouton natif) retourne au Knowledge Principal (et remet `page_secondaire` à 0)
 - Les options restent TOUJOURS visibles
@@ -181,7 +223,7 @@ Si on entre dans le Knowledge Secondaire et que `demande_reformulee` est non `nu
 3. Si l'utilisateur clique sur "Exécuter la demande" → lancer l'exécution
 4. Si l'utilisateur fait Skip → retourner au principal ou terminer
 
-Les questions pré-remplies sont affichées dans le menu avec un indicateur visuel (ex: "A1 ✓" dans la description) mais ne déclenchent AUCUN comportement automatique. C'est l'utilisateur qui décide quand exécuter.
+Les questions pré-remplies sont affichées dans le menu avec un indicateur visuel (la `valeur` confirmée suivie de ✓ dans la description, ex: `"Mon Super Projet ✓"`) mais ne déclenchent AUCUN comportement automatique. C'est l'utilisateur qui décide quand exécuter.
 
 ### Niveau 3 : Sous-knowledge
 
@@ -201,7 +243,12 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodology-knowl
 - Ne PAS afficher de choix Vrai/Faux/Passer à l'utilisateur
 - Cette option est entièrement programmatique et non modifiable par l'humain dans le fichier de configuration
 - **Déterminer la demande à exécuter** : lire `demande_reformulee` dans `knowledge_resultats.json`. Si non `null`, utiliser cette valeur. Sinon, utiliser le message initial de l'utilisateur au démarrage de la session.
-- **Collecter le contexte** : lire dans `knowledge_resultats.json` les réponses de TOUTES les questions qui précèdent dans ce knowledge. Par exemple, si on exécute A3, collecter les réponses de A1 et A2. Construire un objet JSON : `{"A1": "Vrai", "A2": "Faux"}`. Ce contexte sera transmis au programme via `--context`.
+- **Collecter le contexte** : lire dans `knowledge_resultats.json` les réponses ET les valeurs détectées de TOUTES les questions qui précèdent dans ce knowledge. Pour chaque question précédente, inclure le résultat (Vrai/Faux/Passer) et la valeur confirmée/corrigée (champ `valeur` de `valeurs_detectees`). Construire un objet JSON enrichi :
+  ```json
+  {"A1": {"resultat": "Vrai", "valeur": "Mon Super Projet"}, "A2": {"resultat": "Vrai", "valeur": "Application de gestion de tâches avec interface web"}, "A3": {"resultat": "Vrai", "valeur": "CC"}}
+  ```
+  Note : c'est la `valeur` (synthèse confirmée) qui est transmise, pas l'`original`. C'est ce que l'utilisateur a validé ou corrigé au niveau 3.
+  Ce contexte sera transmis au programme via `--context`.
 
 **Checkpoint — Vérification pré-exécution (survie à la compaction) :**
 Avant de lancer l'exécution, vérifier s'il existe déjà un checkpoint :
@@ -214,6 +261,68 @@ python3 executer_demande.py --status
   - Si pas de preuve → exécution interrompue → relancer l'exécution (étape 1)
 - **Si checkpoint existe avec `phase: "pre_execution"`** : le programme n'a pas encore démarré → continuer normalement (étape 1)
 - **Si pas de checkpoint** : première exécution → continuer normalement (étape 1)
+
+**Issue GitHub — Journalisation de la demande (non-bloquant) :**
+Avant l'exécution, tenter de créer un issue GitHub pour journaliser la demande. Cette étape est **non-bloquante** : si GitHub est indisponible, l'information est persistée sur disque et l'exécution continue normalement. La synchronisation vers GitHub se fait dès que possible.
+
+1. Vérifier l'état actuel de l'issue :
+   - Lire `knowledge_resultats.json` → champ `issue_github`
+   - **Si `issue_github.numero` existe (non null)** : l'issue existe déjà sur GitHub → passer à l'exécution
+   - **Si `issue_github.local_only` est `true`** : données persistées sur disque d'une session précédente → tenter la synchronisation (étape 3), puis passer à l'exécution dans tous les cas
+   - **Si `issue_github` est `null` ou absent** : créer l'issue (étape 2)
+
+2. Créer l'issue GitHub via `scripts/gh_helper.py` :
+   a. Déterminer le repo cible : utiliser la valeur confirmée de A3 (projet) au format `owner/repo`. Si le projet est le repo courant, déduire `owner/repo` depuis l'URL du remote origin.
+   b. Construire le titre : utiliser la valeur confirmée de A1 (titre)
+   c. Construire le body : utiliser la valeur confirmée de A2 (description)
+   d. Tenter la création via Bash :
+      ```
+      python3 -c "
+      from scripts.gh_helper import GitHubHelper
+      gh = GitHubHelper()
+      result = gh.issue_create(repo='<owner/repo>', title='<titre_A1>', body='<description_A2>', labels=['task'])
+      import json; print(json.dumps(result))
+      "
+      ```
+   e. **Si la création réussit** (`created: true` dans le résultat) : sauvegarder dans `knowledge_resultats.json` :
+      ```json
+      "issue_github": {
+        "numero": <numero>,
+        "repo": "<owner/repo>",
+        "url": "<html_url>",
+        "node_id": "<node_id>",
+        "local_only": false
+      }
+      ```
+      Committer : `git add .claude/knowledge_resultats.json && git commit -m "knowledge: issue GitHub #<numero> créé"`
+      Pousser : `git push -u origin <branche-courante>`
+      → Passer à l'exécution.
+   f. **Si la création échoue** (erreur réseau, token invalide, etc.) : → **Fallback sur disque** (étape 4), puis passer à l'exécution quand même.
+
+3. **Synchronisation d'un issue local vers GitHub** (reprise après fallback) :
+   - Lire les données persistées dans `issue_github` (titre, body, repo)
+   - Tenter la création via `gh.issue_create(repo, title, body, labels=['task'])`
+   - **Si réussite** : mettre à jour `issue_github` avec `numero`, `url`, `node_id`, et `local_only: false`. Committer et pousser.
+   - **Si échec** : GitHub toujours indisponible. Les données restent persistées sur disque pour la prochaine session. L'exécution continue normalement.
+
+4. **Fallback sur disque** (GitHub indisponible) :
+   Persister les informations de l'issue localement pour synchronisation ultérieure :
+   a. Sauvegarder dans `knowledge_resultats.json` :
+      ```json
+      "issue_github": {
+        "numero": null,
+        "repo": "<repo>",
+        "url": null,
+        "local_only": true,
+        "titre": "<titre_A1>",
+        "body": "<description_A2>"
+      }
+      ```
+   b. Committer : `git add .claude/knowledge_resultats.json && git commit -m "knowledge: issue persisté sur disque (GitHub indisponible)"`
+   c. Pousser : `git push -u origin <branche-courante>`
+   d. L'exécution **continue normalement**. À la prochaine session, le knowledge détectera l'issue en attente et tentera la synchronisation automatique (étape 3).
+
+**Note :** Une fois l'issue créé sur GitHub (`local_only: false`), les champs temporaires `titre` et `body` ne sont plus nécessaires — tout pointe vers le système externe.
 
 **Exécution inline (NE PAS utiliser l'outil Skill) :**
 L'exécution se fait **directement dans le flow du knowledge-validation** sans appeler de sous-skill. Cela évite les frontières de tour qui interrompent le flow. Toutes les étapes ci-dessous s'enchaînent dans le MÊME tour de réponse.
@@ -256,6 +365,7 @@ L'exécution se fait **directement dans le flow du knowledge-validation** sans a
      - Restaurer les fichiers : `git checkout . && git clean -fd`
      - Restaurer le stash : `git stash pop`
      - Nettoyer : `rm -f .claude/preuve_execution.json`
+     - **Ne PAS fermer l'issue GitHub** — l'issue reste ouverte pour journaliser le déroulement. Si `issue_github.numero` existe, poster un commentaire d'échec via `gh.issue_comment_post(repo, numero, "Exécution échouée — rollback effectué. Reformulation en cours.")`
      - Enregistrer "Faux" pour cette question
      - Sauvegarder résultats → proposer la reformulation (voir ci-dessous)
 
@@ -302,61 +412,109 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 
 **Pour toutes les autres actions (fonction, programme) :**
 - **Lecture de methodology pré-exécution** : avant d'exécuter l'action, vérifier si le knowledge parent a un champ `methodology` dans sa configuration (ex: `methodology: methodology-documentation` dans le header du knowledge). Si oui :
-  1. Lire le fichier `knowledge_config/methodologies/<methodology>.md` avec l'outil Read (ex: `knowledge_config/methodologies/methodology-documentation.md`)
+  1. Lire le fichier `methodology/<methodology>.md` avec l'outil Read (ex: `methodology/methodology-documentation.md`)
   2. Utiliser les instructions de cette methodology pour guider l'exécution de la fonction/programme
   3. Cela permet à Claude d'être spécialisé pour la tâche sans charger toutes les methodologies en mémoire
 - Si pas de champ `methodology` : exécuter normalement sans lecture supplémentaire
-- Afficher avec AskUserQuestion :
+- **Afficher avec AskUserQuestion :**
   - header: l'identifiant de la question (ex: "A1")
-  - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodology-knowledge.md`
-  - Si **Vrai** : afficher le message de la fonction ou du programme associé (voir tableau ci-dessus), puis retourner au Knowledge Secondaire
-  - Si **Faux** ou **Passer** : enregistrer la réponse et retourner au Knowledge Secondaire
+  - **Construction de la question** — deux cas selon que `original` existe ou non dans `valeurs_detectees[ID]` :
+    - **Si `original` est non null** (ex: A2 description — l'utilisateur a écrit un long texte) :
+      La question doit montrer les DEUX versions pour comparaison :
+      ```
+      Confirmez: <valeur (synthèse)>
+
+      Texte original: <original>
+      ```
+      Exemple pour A2 :
+      ```
+      Confirmez: Application de gestion de tâches avec interface web
+
+      Texte original: Je veux créer une application qui permet de gérer des tâches, avec une interface web moderne, des notifications, et un système de priorités...
+      ```
+      L'utilisateur voit la synthèse de Claude ET son texte original, et peut juger si la synthèse est fidèle. Ce qui sera utilisé en aval par le système, c'est la `valeur` (la synthèse), pas l'original.
+    - **Si `original` est null** (ex: A1 titre, A3 projet — valeur déjà concise) :
+      Question simple : `"Confirmez: <valeur>"` (ex: `"Confirmez: Mon Super Projet"`)
+      - **Cas spécial A3 (projet)** : enrichir la description de l'option avec les infos du repo GitHub. Utiliser `gh repo view <owner>/<repo> --json name,description,url` pour obtenir la description et l'URL. Afficher :
+        ```
+        Confirmez le projet: CC (Claude Code AI)
+        https://github.com/packetqc/CC
+        ```
+        Si le projet n'est pas détecté, l'utilisateur peut taper le nom du repo dans le champ Other. Claude vérifiera alors avec `gh repo view` que le repo existe avant de confirmer.
+    - **Si `valeur` est null** : `"Confirmez: (non détecté)"`
+  - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodology-knowledge.md` (Vrai, Faux, Passer)
+    - **Vrai** : confirme la synthèse. Enregistrer "Vrai", conserver `valeurs_detectees`, afficher le message associé, retourner au Knowledge Secondaire
+    - **Faux** : rejette la synthèse. Enregistrer "Faux", retourner au Knowledge Secondaire
+    - **Passer** : enregistrer "Passer", retourner au Knowledge Secondaire
+    - **Other (champ texte libre)** : l'utilisateur tape une **valeur corrigée** (reformulation, précision, ou réécriture complète). Traiter comme **Vrai** avec correction :
+      - Mettre à jour `valeurs_detectees[ID].valeur` avec la nouvelle valeur saisie (la synthèse est remplacée)
+      - L'`original` reste inchangé (c'est le texte brut de l'utilisateur)
+      - Enregistrer "Vrai" pour cette question
+      - Afficher le message associé
+      - Retourner au Knowledge Secondaire
+    - Au retour au Knowledge Secondaire, la description de l'option reflètera la valeur mise à jour
 
 ### Grille de résultats
 
 Quand l'utilisateur fait **Skip** au niveau principal, construire et afficher un tableau dynamique basé sur les knowledge et questions présents dans `methodology-knowledge.md` :
 
-- **Lignes** : une par knowledge trouvé (ex: Knw A, Knw B, Knw C, Knw D...)
-- **Colonnes** : autant que le nombre maximum de questions parmi tous les knowledge (numérotées 1, 2, 3...)
+- **Lignes** : une par knowledge trouvé, en utilisant le **nom FR du knowledge** tel que défini dans `methodology-knowledge.md` (ex: "Validation", "Knowledge B", "Documentation"). Si le nom est trop long, le tronquer pour garder la grille lisible (max ~15 caractères).
+- **Colonnes** : utiliser les **IDs des questions** tels que définis dans `methodology-knowledge.md` (ex: A1, A2, A3, B1, B2...). Chaque knowledge affiche ses propres IDs comme en-têtes de colonnes.
 - **Valeurs** : remplacer par la réponse (Vrai, Faux, Passer) ou `--` si non répondu
 - **Largeur de colonne** : 10 caractères, valeurs centrées
 
-Exemple avec 3 knowledge de 3 questions chacun :
+Exemple avec 3 knowledge :
 ```
-        GRILLE DE RÉSULTATS
-+-------+----------+----------+----------+
-|       |    1     |    2     |    3     |
-+=======+==========+==========+==========+
-| Knw A |   Vrai   |    --    |  Passer  |
-+-------+----------+----------+----------+
-| Knw B |    --    |   Vrai   |    --    |
-+-------+----------+----------+----------+
-| Knw C |  Faux    |    --    |   Vrai   |
-+-------+----------+----------+----------+
+                GRILLE DE RÉSULTATS
++-----------------+----------+----------+----------+
+|                 |    A1    |    A2    |    A3    |
++=================+==========+==========+==========+
+| Validation      |   Vrai   |    --    |  Passer  |
++-----------------+----------+----------+----------+
+|                 |    B1    |    B2    |    B3    |
++-----------------+----------+----------+----------+
+| Knowledge B     |    --    |   Vrai   |    --    |
++-----------------+----------+----------+----------+
+|                 |    C1    |    C2    |    C3    |
++-----------------+----------+----------+----------+
+| Knowledge C     |  Faux    |    --    |   Vrai   |
++-----------------+----------+----------+----------+
 ```
 
-Exemple avec 5 knowledge dont certains ont des nombres de questions différents :
+Exemple avec knowledge ayant des nombres de questions différents :
 ```
-        GRILLE DE RÉSULTATS
-+-------+----------+----------+----------+----------+
-|       |    1     |    2     |    3     |    4     |
-+=======+==========+==========+==========+==========+
-| Knw A |   Vrai   |    --    |  Passer  |          |
-+-------+----------+----------+----------+----------+
-| Knw B |    --    |   Vrai   |    --    |          |
-+-------+----------+----------+----------+----------+
-| Knw C |  Faux    |    --    |   Vrai   |          |
-+-------+----------+----------+----------+----------+
-| Knw D |   Vrai   |    --    |          |          |
-+-------+----------+----------+----------+----------+
-| Knw E |    --    |   Vrai   |    --    |  Faux    |
-+-------+----------+----------+----------+----------+
+                GRILLE DE RÉSULTATS
++-----------------+----------+----------+----------+----------+
+|                 |    A1    |    A2    |    A3    |    A4    |
++=================+==========+==========+==========+==========+
+| Validation      |   Vrai   |   Vrai   |   Vrai   |   Vrai   |
++-----------------+----------+----------+----------+----------+
+|                 |    B1    |    B2    |    B3    |
++-----------------+----------+----------+----------+
+| Knowledge B     |    --    |    --    |    --    |
++-----------------+----------+----------+----------+
+|                 |    D1    |    D2    |    D3    |
++-----------------+----------+----------+----------+
+| Documentation   |    --    |    --    |    --    |
++-----------------+----------+----------+----------+
 ```
-(cellules vides si le knowledge n'a pas autant de questions)
+Chaque knowledge a sa propre rangée d'en-têtes avec ses IDs, suivie de sa rangée de valeurs. Cela permet de supporter des nombres de colonnes différents par knowledge.
 
 **Message de fin conditionnel :** Après la grille, vérifier si toutes les questions de tous les knowledge ont été répondues (aucune valeur `"--"` dans les résultats) :
 - **Si complet** (aucun `"--"`) : afficher `message_fin_complet` de `methodology-knowledge.md`
 - **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
+
+**Publication de la grille sur l'issue GitHub :**
+Après l'affichage de la grille, si `issue_github.numero` existe (non null, synchronisé vers GitHub), poster un commentaire sur l'issue via `scripts/gh_helper.py` :
+```python
+from scripts.gh_helper import GitHubHelper
+gh = GitHubHelper()
+gh.issue_comment_post(repo='<owner/repo>', issue_number=<numero>, body='<grille_markdown>')
+```
+Le body du commentaire doit contenir :
+- La grille de résultats en format markdown (même contenu que celui affiché à l'utilisateur)
+- Le message de fin (complet ou incomplet)
+- Si `local_only: true` (GitHub était indisponible), ne pas tenter le commentaire — les données restent sur disque pour la prochaine session.
 
 **Fonctions post-grille :** Ces fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-10 ci-dessus :
 1. `compilation_metriques(resultats)` — Compile les métriques. Si des changements sont détectés, met `_documentation_requise = True`

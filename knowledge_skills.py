@@ -3,7 +3,7 @@
 
 Chaque composant du knowledge est un Skill enregistré dans un registre.
 Les skills peuvent s'appeler entre eux par nom via le registre.
-Charge la configuration depuis knowledge_config/methodology-knowledge.md.
+Charge la configuration depuis methodology/methodology-knowledge.md.
 """
 import subprocess
 import sys

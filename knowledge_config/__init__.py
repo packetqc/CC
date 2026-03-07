@@ -109,11 +109,11 @@ def charger_methodologie(chemin=None, langue="fr"):
     }
 
     Chaque question contient : id, choix (label bilingue), action_vrai, message_vrai
-    Chaque knowledge peut contenir : methodology (nom du fichier dans methodologies/)
+    Chaque knowledge peut contenir : methodology (nom du fichier dans methodology/)
     """
     if chemin is None:
         chemin = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              "methodology-knowledge.md")
+                              "..", "methodology", "methodology-knowledge.md")
 
     with open(chemin, "r", encoding="utf-8") as f:
         contenu = f.read()

@@ -11,7 +11,7 @@ Ce skill est invoqué automatiquement par le knowledge-validation quand l'utilis
 
 Avant d'exécuter toute tâche de documentation, lire la methodology spécifique :
 ```
-knowledge_config/methodologies/methodology-documentation.md
+methodology/methodology-documentation.md
 ```
 
 Cette lecture se fait via l'outil Read. Elle charge les instructions spécialisées pour la tâche à accomplir, sans encombrer la mémoire avec toutes les methodologies du système.
