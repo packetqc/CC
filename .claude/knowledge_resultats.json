@@ -5,7 +5,7 @@
   "page_principal": 0,
   "page_secondaire": 0,
   "demande_executee": false,
-  "demande_reformulee": null,
+  "demande_reformulee": "oui, peux-tu me créer un projet qui s'appelle hahaha?",
   "resultats": {
     "Knowledge A": {"A1": "Vrai", "A2": "Vrai", "A3": "Faux"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
