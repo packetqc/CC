@@ -141,6 +141,7 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` 
 - Ne PAS afficher de choix Vrai/Faux/Passer à l'utilisateur
 - Cette option est entièrement programmatique et non modifiable par l'humain dans le fichier de configuration
 - Capturer le message initial de l'utilisateur au démarrage de la session (la première demande qu'il a tapée)
+- **Collecter le contexte** : lire dans `knowledge_resultats.json` les réponses de TOUTES les questions qui précèdent dans ce knowledge. Par exemple, si on exécute A3, collecter les réponses de A1 et A2. Construire un objet JSON : `{"A1": "Vrai", "A2": "Faux"}`. Ce contexte sera transmis au programme via `--context`.
 
 **Checkpoint — Vérification pré-exécution (survie à la compaction) :**
 Avant de lancer l'exécution, vérifier s'il existe déjà un checkpoint :
@@ -157,7 +158,9 @@ python3 executer_demande.py --status
 **Rollback — Snapshot git avant exécution :**
 1. Avant d'exécuter, supprimer toute preuve précédente : `rm -f .claude/preuve_execution.json`
 2. Créer un snapshot : `git stash --include-untracked -m "snapshot-avant-execution"`
-3. Appeler le skill `commande-utilisateur` via l'outil Skill en lui passant la chaîne en argument : `skill: "commande-utilisateur", args: "message initial de l'utilisateur"`
+3. Appeler le skill `commande-utilisateur` via l'outil Skill en lui passant la demande ET le contexte :
+   `skill: "commande-utilisateur", args: "message initial de l'utilisateur |CONTEXT| {\"A1\":\"Vrai\",\"A2\":\"Faux\"}"`
+   Le séparateur `|CONTEXT|` délimite la demande du JSON des réponses précédentes.
 4. **Vérification de preuve d'exécution** (anti-contournement) :
    - Lire le fichier `.claude/preuve_execution.json`
    - **Si le fichier EXISTE** : vérifier le champ `execution_reelle` est `true` et que `code_retour` est cohérent. Le champ `token` (hash SHA-256 basé sur timestamp+pid) prouve que le fichier a été écrit par le programme et non fabriqué. → Passer à l'étape 5.

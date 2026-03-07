@@ -226,15 +226,32 @@ def trouver_route_par_id(route_id, config):
     return None
 
 
-def executer_route(route, args=None):
-    """Exécute le programme associé à une route avec ses arguments."""
+def executer_route(route, args=None, context=None):
+    """Exécute le programme associé à une route avec ses arguments et contexte.
+
+    Args:
+        route: La route à exécuter
+        args: Les arguments extraits de la demande (ex: titre du projet)
+        context: JSON des réponses précédentes du knowledge (ex: {"A1":"Vrai","A2":"Faux"})
+    """
     programme = route["programme"]
     if args:
-        # Échapper les guillemets dans les arguments pour le shell
         args_escaped = args.replace('"', '\\"')
         programme = f'{programme} "{args_escaped}"'
     route_id = route.get("id", "inconnu")
     description = route.get("description", "")
+
+    # Préparer les variables d'environnement avec le contexte
+    env = os.environ.copy()
+    if context:
+        env["KNOWLEDGE_CONTEXT"] = context
+        # Parser le JSON pour créer des variables individuelles
+        try:
+            ctx = json.loads(context)
+            for question_id, reponse in ctx.items():
+                env[f"KNW_{question_id.upper()}"] = reponse
+        except json.JSONDecodeError:
+            print(f"Attention : contexte JSON invalide, ignoré : {context}")
 
     print(f"Route : [{route_id}] {description}")
     print(f"Programme : {programme}")
@@ -271,6 +288,7 @@ def executer_route(route, args=None):
             capture_output=True,
             text=True,
             timeout=TIMEOUT_SECONDS,
+            env=env,
         )
 
         if resultat.stdout.strip():
@@ -354,15 +372,24 @@ def main():
     if arg == "--route":
         if len(sys.argv) < 3:
             print("Faux — identifiant de route manquant.")
-            print("Usage: python3 executer_demande.py --route <id> [--args \"valeur\"]")
+            print('Usage: python3 executer_demande.py --route <id> [--args "valeur"] [--context \'{"A1":"Vrai"}\']')
             sys.exit(1)
 
         route_id = sys.argv[2]
 
-        # Extraire les arguments optionnels (--args "valeur")
+        # Parser les arguments nommés (--args, --context)
         route_args = None
-        if len(sys.argv) >= 5 and sys.argv[3] == "--args":
-            route_args = sys.argv[4]
+        route_context = None
+        i = 3
+        while i < len(sys.argv):
+            if sys.argv[i] == "--args" and i + 1 < len(sys.argv):
+                route_args = sys.argv[i + 1]
+                i += 2
+            elif sys.argv[i] == "--context" and i + 1 < len(sys.argv):
+                route_context = sys.argv[i + 1]
+                i += 2
+            else:
+                i += 1
 
         config = charger_routes()
         if config is None:
@@ -379,13 +406,13 @@ def main():
         parametres = route.get("parametres", [])
         params_obligatoires = [p for p in parametres if p.get("obligatoire")]
         if params_obligatoires and not route_args:
-            print(f"Faux — paramètre(s) obligatoire(s) manquant(s) :")
+            print("Faux — paramètre(s) obligatoire(s) manquant(s) :")
             for p in params_obligatoires:
                 print(f"  - {p['nom']} : {p.get('description', '')}")
             print(f"Usage: python3 executer_demande.py --route {route_id} --args \"valeur\"")
             sys.exit(1)
 
-        executer_route(route, args=route_args)
+        executer_route(route, args=route_args, context=route_context)
 
     else:
         print(f"Faux — argument inconnu : {arg}")

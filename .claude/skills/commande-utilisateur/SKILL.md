@@ -5,13 +5,22 @@ description: Exécute la demande initiale de l'utilisateur via le programme exec
 
 ## Exécution de la demande utilisateur
 
-Ce skill reçoit en argument la chaîne de caractères correspondant à la demande initiale de l'utilisateur au démarrage de la session.
+Ce skill reçoit en argument la demande de l'utilisateur et le contexte des réponses précédentes du knowledge.
+
+**Format de l'argument :**
+```
+"demande de l'utilisateur |CONTEXT| {\"A1\":\"Vrai\",\"A2\":\"Faux\"}"
+```
+Le séparateur `|CONTEXT|` sépare la demande du JSON des réponses précédentes.
+S'il n'y a pas de `|CONTEXT|`, l'argument entier est la demande (sans contexte).
 
 ### Fonctionnement — Classification par intelligence artificielle
 
 **IMPORTANT : Claude ne doit JAMAIS répondre à la demande. Il ne fait que classifier et router.**
 
-1. Recevoir la chaîne de caractères passée en argument du skill
+1. Recevoir l'argument et le parser :
+   - Séparer au `|CONTEXT|` pour extraire la demande et le contexte JSON
+   - Si pas de `|CONTEXT|`, la demande est l'argument entier et le contexte est vide
 2. Lire les routes disponibles via :
    ```
    python3 executer_demande.py --list-routes
@@ -27,7 +36,7 @@ Ce skill reçoit en argument la chaîne de caractères correspondant à la deman
    - **Langage naturel** : `"crée-moi le projet Démo v2"` → paramètre title = `"Démo v2"`
    - Les paramètres marqués `obligatoire: true` doivent être présents, sinon → **Faux**
 5. **Si une route correspond** : exécuter le programme via :
-   - Sans paramètres :
+   - Sans paramètres, sans contexte :
      ```
      python3 executer_demande.py --route <id>
      ```
@@ -35,6 +44,15 @@ Ce skill reçoit en argument la chaîne de caractères correspondant à la deman
      ```
      python3 executer_demande.py --route <id> --args "<valeur extraite>"
      ```
+   - Avec contexte (réponses précédentes) :
+     ```
+     python3 executer_demande.py --route <id> --context '{"A1":"Vrai","A2":"Faux"}'
+     ```
+   - Avec les deux :
+     ```
+     python3 executer_demande.py --route <id> --args "<valeur>" --context '{"A1":"Vrai","A2":"Faux"}'
+     ```
+   - **TOUJOURS passer `--context`** si un contexte a été reçu dans l'argument du skill
    - Si code de retour = 0 : indiquer **Vrai**
    - Si code de retour != 0 : indiquer **Faux**
 5. **Si aucune route ne correspond** (ex: "bonjour", demande hors périmètre) :
@@ -95,10 +113,9 @@ Si Claude répond à la demande au lieu de router vers un programme :
 
 ### Exemples de classification
 
-| Demande | Route | Arguments |
-|---------|-------|-----------|
-| `project create Démo v2` | `project-create` | `--args "Démo v2"` |
-| `peux-tu créer le projet Démo v2` | `project-create` | `--args "Démo v2"` |
-| `build` | `build` | _(aucun)_ |
-| `compile mon application` | `build` | _(aucun)_ |
+| Demande | Route | Commande complète |
+|---------|-------|-------------------|
+| `project create Démo v2` (ctx: A1=Vrai, A2=Faux) | `project-create` | `--route project-create --args "Démo v2" --context '{"A1":"Vrai","A2":"Faux"}'` |
+| `peux-tu créer le projet Démo v2` (ctx: A1=Vrai, A2=Vrai) | `project-create` | `--route project-create --args "Démo v2" --context '{"A1":"Vrai","A2":"Vrai"}'` |
+| `build` (ctx: A1=Vrai, A2=Passer) | `build` | `--route build --context '{"A1":"Vrai","A2":"Passer"}'` |
 | `bonjour` | _(aucune route)_ | → **Faux** |
