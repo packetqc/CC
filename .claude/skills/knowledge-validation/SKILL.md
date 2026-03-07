@@ -76,7 +76,7 @@ Pour construire les résultats par défaut : pour chaque knowledge dans `methodo
 4. Committer sur la branche de travail : `git add .claude/knowledge_resultats.json && git commit -m "knowledge: mise à jour des résultats"`
 5. Pousser sur la branche de travail : `git push -u origin <branche-courante>`
 
-**Quand l'utilisateur choisit Terminer (synchronisation vers main) :**
+**Quand l'utilisateur fait Skip au niveau principal (synchronisation vers main) :**
 1. Mettre `en_cours` à `false`
 2. Sauvegarder le fichier
 3. Committer sur la branche de travail : `git add .claude/knowledge_resultats.json && git commit -m "knowledge: validation terminée"`
@@ -104,14 +104,12 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 
 **Règle de pagination (identique aux deux niveaux) :**
 - Calculer le nombre total d'éléments (knowledge ou questions) depuis `methodology-knowledge.md`
-- Chaque niveau a une option de contrôle fixe en dernière position :
-  - **Niveau principal** : `Terminer` (toujours en dernière position)
-  - **Niveau secondaire** : `Passer` (toujours en dernière position)
-- Si total ≤ 2 : afficher tous les éléments + option de contrôle (2 ou 3 options, pas de pagination)
-- Si total = 3 : afficher les 3 éléments + option de contrôle (4 options, pas de pagination)
-- Si total > 3 : pagination nécessaire
-  - **Page intermédiaire** : 2 éléments + `Suivant ▸` + option de contrôle (4 options)
-  - **Dernière page** : éléments restants (1 à 3) + option de contrôle (2 à 4 options, pas de `Suivant ▸`)
+- Il n'y a plus d'option de contrôle fixe (Terminer/Passer) dans les choix — le bouton **Skip** natif de AskUserQuestion remplit ce rôle
+- Si total = 1 : entrée automatique (pas de menu — voir mode initial du principal)
+- Si total ≤ 4 : afficher tous les éléments (2 à 4 options, pas de pagination)
+- Si total > 4 : pagination nécessaire
+  - **Page intermédiaire** : 3 éléments + `Suivant ▸` (4 options)
+  - **Dernière page** : éléments restants (2 à 4 options, pas de `Suivant ▸`)
 - Maintenir un index de page courant dans `.claude/knowledge_resultats.json` : champs `page_principal` et `page_secondaire` (défaut: 0)
 
 **Persistance de la page :** Après chaque navigation de page, sauvegarder l'index dans le JSON et committer/pousser comme pour toute autre mise à jour.
@@ -119,36 +117,34 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 ### Niveau 1 : Knowledge Principal
 
 **Mode initial (demande_executee = false) :**
-- Afficher avec AskUserQuestion (multiSelect: false) :
-  - header: "Principal"
-  - options: le 1er knowledge uniquement + `Terminer` (2 options)
-- L'utilisateur doit d'abord entrer dans le 1er knowledge, où la 3e question (executer_demande) permet d'exécuter sa demande
+- **Entrée automatique** : puisqu'il n'y a qu'un seul knowledge disponible (le 1er), entrer directement dans le Knowledge Secondaire correspondant sans afficher de menu principal. AskUserQuestion exige minimum 2 options, et avec un seul élément sans option de contrôle, le menu serait impossible.
+- L'utilisateur doit d'abord passer par le 1er knowledge, où la 3e question (executer_demande) permet d'exécuter sa demande
 - Mettre `demande_executee` à `true` **UNIQUEMENT** quand l'exécution retourne **Vrai** (succès). Si Faux, `demande_executee` reste `false`.
-- **Terminer** affiche la grille de résultats et le knowledge est terminé
+- Quand l'utilisateur fait **Skip** au niveau secondaire en mode initial, traiter comme **Terminer** (afficher grille et finir) plutôt que retourner au principal (puisque le principal n'a qu'un seul élément)
 
 **Mode complet (demande_executee = true) :**
 - Afficher avec AskUserQuestion (multiSelect: false) :
   - header: "Principal"
   - Tous les knowledge lus depuis `methodology-knowledge.md` (le 1er knowledge reste toujours accessible pour relancer l'exécution via sa 3e question)
-  - Appliquer la pagination avec `Terminer` comme option de contrôle
+  - Appliquer la pagination sans option de contrôle (Skip natif remplace Terminer)
 - Si l'utilisateur choisit un knowledge : lancer le Knowledge Secondaire correspondant (questionnaire de validation)
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page et réafficher
-- **Terminer** affiche la grille de résultats et le knowledge est terminé
+- **Skip** (bouton natif) affiche la grille de résultats et le knowledge est terminé
 - Les options restent TOUJOURS visibles (ne jamais retirer une option complétée)
-- Boucler jusqu'à ce que l'utilisateur choisisse **Terminer**
+- Boucler jusqu'à ce que l'utilisateur choisisse **Skip**
 
 ### Niveau 2 : Knowledge Secondaire
 
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
 - Lire toutes les questions du knowledge depuis `methodology-knowledge.md`
-- Appliquer la pagination (voir règle ci-dessus) avec `Passer` comme option de contrôle
+- Appliquer la pagination sans option de contrôle (Skip natif remplace Passer)
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
 - Pour les questions de type `executer_demande`, afficher le label "Exécuter la demande" au lieu de l'identifiant de la question
 - Chaque question lance le Sous-knowledge correspondant
-- **Passer** retourne au Knowledge Principal (et remet `page_secondaire` à 0)
+- **Skip** (bouton natif) retourne au Knowledge Principal (et remet `page_secondaire` à 0)
 - Les options restent TOUJOURS visibles
-- Boucler jusqu'à ce que l'utilisateur choisisse **Passer**
+- Boucler jusqu'à ce que l'utilisateur choisisse **Skip**
 
 **Retour après reformulation :**
 Si on entre dans le Knowledge Secondaire et que `demande_reformulee` est non `null` dans `knowledge_resultats.json`, cela signifie que l'utilisateur a reformulé sa demande après un échec. Dans ce cas :
@@ -265,7 +261,7 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 
 ### Grille de résultats
 
-Quand l'utilisateur choisit **Terminer**, construire et afficher un tableau dynamique basé sur les knowledge et questions présents dans `methodology-knowledge.md` :
+Quand l'utilisateur fait **Skip** au niveau principal, construire et afficher un tableau dynamique basé sur les knowledge et questions présents dans `methodology-knowledge.md` :
 
 - **Colonnes** : une par knowledge trouvé (ex: Knw A, Knw B, Knw C, Knw D...)
 - **Lignes** : autant que le nombre maximum de questions parmi tous les knowledge
@@ -307,6 +303,9 @@ Utiliser `message_fin` de `methodology-knowledge.md` comme message de fin après
 
 ### Important
 
-- Si l'utilisateur sélectionne "No preference", "Other" ou **Skip** dans AskUserQuestion : au niveau principal, traiter comme **Terminer** ; au niveau secondaire, traiter comme retour au Knowledge Principal.
+- Si l'utilisateur sélectionne "No preference", "Other" ou **Skip** dans AskUserQuestion :
+  - Au niveau principal : traiter comme **Terminer** (afficher grille et finir)
+  - Au niveau secondaire en mode initial (`demande_executee = false`) : traiter aussi comme **Terminer** (afficher grille et finir), car le principal n'a qu'un seul élément
+  - Au niveau secondaire en mode complet (`demande_executee = true`) : traiter comme **retour au Knowledge Principal** (et remettre `page_secondaire` à 0)
 - Toujours montrer le message de la fonction/programme quand Vrai est sélectionné AVANT de retourner au niveau supérieur.
 - **CRITIQUE** : Après un compactage de session, TOUJOURS lire `.claude/knowledge_resultats.json` pour retrouver l'état du knowledge avant de continuer.
