@@ -50,6 +50,7 @@ Le format est construit dynamiquement à partir de `knowledge_config/methodology
   "page_secondaire": 0,
   "demande_executee": false,
   "demande_reformulee": null,
+  "valeurs_detectees": {},
   "resultats": {
     "Knowledge A": {"A1": "--", "A2": "--", "A3": "--"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
@@ -156,13 +157,30 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 
 ### Niveau 2 : Knowledge Secondaire
 
+**Détection automatique des valeurs :**
+À la première entrée dans un Knowledge Secondaire, AVANT d'afficher le menu, Claude doit auto-détecter les valeurs correspondant à chaque question (sauf `executer_demande` et `tous`) en analysant :
+- Le message initial de l'utilisateur (ou `demande_reformulee` si non null)
+- Le contexte du projet (fichiers de config, etc.)
+- Le champ `choix` de chaque question comme indice sémantique (ex: "Confirmez le titre" → chercher un titre)
+
+Les valeurs détectées sont stockées dans `valeurs_detectees` de `knowledge_resultats.json` :
+```json
+"valeurs_detectees": {"A1": "Mon Projet", "A2": "Description du projet", "A3": "nom-projet"}
+```
+Si une valeur ne peut pas être détectée, mettre `null`. Les valeurs détectées sont recalculées à chaque entrée dans le knowledge secondaire (pour tenir compte de reformulations).
+
+**Affichage du menu :**
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
 - question: format `"Choisir parmi les options suivantes. (Pour passer, appuyez sur Skip)"` — en anglais : `"Choose from the following options. (To skip, press Skip)"`
 - Lire toutes les questions du knowledge depuis `methodology-knowledge.md`
+- **Options (non-executer_demande, non-tous)** :
+  - label: le champ `choix` de la question (ex: "Confirmez le titre")
+  - description: la **valeur détectée** (ex: `"Mon Projet"`) ou `"(non détecté)"` si null. Si la question est déjà répondue, ajouter un indicateur : `"Mon Projet ✓"`
+- **Options `executer_demande`** : label "Exécuter la demande", description comme avant
+- **Options `tous`** : label du champ `choix`, description vide
 - Appliquer la pagination sans option de contrôle (Skip natif remplace Passer)
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
-- Pour les questions de type `executer_demande`, afficher le label "Exécuter la demande" au lieu de l'identifiant de la question
 - Chaque question lance le Sous-knowledge correspondant
 - **Skip** (bouton natif) retourne au Knowledge Principal (et remet `page_secondaire` à 0)
 - Les options restent TOUJOURS visibles
@@ -182,7 +200,7 @@ Si on entre dans le Knowledge Secondaire et que `demande_reformulee` est non `nu
 3. Si l'utilisateur clique sur "Exécuter la demande" → lancer l'exécution
 4. Si l'utilisateur fait Skip → retourner au principal ou terminer
 
-Les questions pré-remplies sont affichées dans le menu avec un indicateur visuel (ex: "A1 ✓" dans la description) mais ne déclenchent AUCUN comportement automatique. C'est l'utilisateur qui décide quand exécuter.
+Les questions pré-remplies sont affichées dans le menu avec un indicateur visuel (la valeur confirmée suivie de ✓ dans la description, ex: `"Mon Projet ✓"`) mais ne déclenchent AUCUN comportement automatique. C'est l'utilisateur qui décide quand exécuter.
 
 ### Niveau 3 : Sous-knowledge
 
@@ -202,7 +220,11 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodology-knowl
 - Ne PAS afficher de choix Vrai/Faux/Passer à l'utilisateur
 - Cette option est entièrement programmatique et non modifiable par l'humain dans le fichier de configuration
 - **Déterminer la demande à exécuter** : lire `demande_reformulee` dans `knowledge_resultats.json`. Si non `null`, utiliser cette valeur. Sinon, utiliser le message initial de l'utilisateur au démarrage de la session.
-- **Collecter le contexte** : lire dans `knowledge_resultats.json` les réponses de TOUTES les questions qui précèdent dans ce knowledge. Par exemple, si on exécute A3, collecter les réponses de A1 et A2. Construire un objet JSON : `{"A1": "Vrai", "A2": "Faux"}`. Ce contexte sera transmis au programme via `--context`.
+- **Collecter le contexte** : lire dans `knowledge_resultats.json` les réponses ET les valeurs détectées de TOUTES les questions qui précèdent dans ce knowledge. Pour chaque question précédente, inclure le résultat (Vrai/Faux/Passer) et la valeur confirmée/corrigée depuis `valeurs_detectees`. Construire un objet JSON enrichi :
+  ```json
+  {"A1": {"resultat": "Vrai", "valeur": "Mon Projet"}, "A2": {"resultat": "Vrai", "valeur": "Description corrigée"}}
+  ```
+  Ce contexte sera transmis au programme via `--context`.
 
 **Checkpoint — Vérification pré-exécution (survie à la compaction) :**
 Avant de lancer l'exécution, vérifier s'il existe déjà un checkpoint :
@@ -307,11 +329,20 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
   2. Utiliser les instructions de cette methodology pour guider l'exécution de la fonction/programme
   3. Cela permet à Claude d'être spécialisé pour la tâche sans charger toutes les methodologies en mémoire
 - Si pas de champ `methodology` : exécuter normalement sans lecture supplémentaire
-- Afficher avec AskUserQuestion :
+- **Afficher avec AskUserQuestion :**
   - header: l'identifiant de la question (ex: "A1")
-  - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodology-knowledge.md`
-  - Si **Vrai** : afficher le message de la fonction ou du programme associé (voir tableau ci-dessus), puis retourner au Knowledge Secondaire
-  - Si **Faux** ou **Passer** : enregistrer la réponse et retourner au Knowledge Secondaire
+  - question: `"Confirmez: <valeur_detectee>"` — où `<valeur_detectee>` est la valeur issue de `valeurs_detectees` dans `knowledge_resultats.json`. Si la valeur est `null` : utiliser `"Confirmez: (non détecté)"`.
+    - Exemple : pour A1 avec valeur détectée "Mon Projet" → question = `"Confirmez: Mon Projet"`
+  - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodology-knowledge.md` (Vrai, Faux, Passer)
+    - **Vrai** : confirme la valeur détectée. Enregistrer "Vrai", mettre à jour `valeurs_detectees` (conserver la valeur), afficher le message associé, retourner au Knowledge Secondaire
+    - **Faux** : rejette la valeur. Enregistrer "Faux", retourner au Knowledge Secondaire
+    - **Passer** : enregistrer "Passer", retourner au Knowledge Secondaire
+    - **Other (champ texte libre)** : l'utilisateur tape une **valeur corrigée** (ex: un autre titre). Traiter comme **Vrai** avec correction :
+      - Mettre à jour `valeurs_detectees[ID]` avec la nouvelle valeur saisie
+      - Enregistrer "Vrai" pour cette question
+      - Afficher le message associé
+      - Retourner au Knowledge Secondaire
+    - Au retour au Knowledge Secondaire, la description de l'option reflètera la valeur mise à jour
 
 ### Grille de résultats
 
