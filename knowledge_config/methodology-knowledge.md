@@ -17,13 +17,15 @@ EN: True, False, Skip
 
 ## Knowledge Principal
 
-### Knowledge A | Knowledge A (lettre: A)
+### Validation de la demande | Request validation (lettre: A)
 
 | ID | Choix FR                 | Choix EN                 | Action           | Message FR                                                 | Message EN                                                  |
 |----|--------------------------|--------------------------|------------------|------------------------------------------------------------|-------------------------------------------------------------|
-| A1 | Vérification             | Verification             | fonction         | >>> Je suis la fonction A1.                                | >>> I am function A1.                                       |
-| A2 | Préparation              | Preparation              | programme        | >>> Je suis le programme A2.                               | >>> I am program A2.                                        |
-| A3 | Exécuter la demande      | Execute request          | executer_demande | (programmatique - exécute la commande initiale de session) | (programmatic - executes the initial session command)       |
+| A1 | Confirmez le titre       | Verification             | fonction         | >>> Je suis la fonction A1.                                | >>> I am function A1.                                       |
+| A2 | Confirmez la description | Preparation              | programme        | >>> Je suis le programme A2.                               | >>> I am program A2.                                        |
+| A3 | Confirmez le projet      | Execute request          | fonction         | >>> Je suis la fonction A3. |     |
+
+| A4 | Exécuter la demande      | Execute request          | executer_demande | (programmatique - exécute la commande initiale de session) | (programmatic - executes the initial session command)       |
 
 ### Knowledge B | Knowledge B (lettre: B)
 
