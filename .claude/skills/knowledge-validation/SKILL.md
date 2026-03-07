@@ -320,10 +320,15 @@ Exemple avec 5 knowledge dont certains ont des nombres de questions différents 
 - **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
 
 **Fonctions post-grille :** Ces 4 fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-10 ci-dessus, **pas** par `AfficherGrilleSkill`. Elles sont découplées de la grille pour permettre une utilisation indépendante :
-1. `compilation_metriques(resultats)` — Compile les métriques du knowledge
-2. `compilation_temps(resultats)` — Compile les données de temps
-3. `confirmation_documentation(resultats)` — **Règle de conformité** : vérifie si l'utilisateur a déjà documenté (via le choix au niveau principal). Si non et que des changements ont été détectés, rappelle à l'utilisateur de documenter avant la sauvegarde via AskUserQuestion. Si déjà documenté, passe directement. L'utilisateur peut toujours passer (Skip) — c'est un rappel, pas un bloqueur.
+1. `compilation_metriques(resultats)` — Compile les métriques. Si des changements sont détectés, met le flag interne `_documentation_requise = True`
+2. `compilation_temps(resultats)` — Compile le temps. Si du temps a été accumulé (tâche exécutée), met le flag interne `_documentation_requise = True`
+3. `confirmation_documentation(resultats)` — **Règle de conformité** : consulte le flag `_documentation_requise`. Si `True` (changements détectés ET l'utilisateur n'a pas encore documenté), rappelle via AskUserQuestion que des changements devraient être documentés avant la sauvegarde. Si `False`, passe directement. L'utilisateur peut toujours passer (Skip) — c'est un rappel de discipline, pas un bloqueur.
 4. `sauvegarde(resultats)` — Sauvegarde les résultats
+
+**Mécanisme du flag `_documentation_requise` :**
+- Mis à `True` par `compilation_metriques` ou `compilation_temps` quand des changements sont détectés
+- Remis à `False` par `reset_documentation_requise()` quand l'utilisateur complète l'étape de documentation dans le quiz de validation (choix au niveau principal, à définir)
+- Consulté par `confirmation_documentation` pour décider si un rappel est nécessaire
 
 Ces fonctions sont **toujours** exécutées après la grille, que le quiz soit complet ou non. L'appel se fait via `from knowledge_skills import compilation_metriques, compilation_temps, confirmation_documentation, sauvegarde`.
 

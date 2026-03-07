@@ -247,34 +247,65 @@ class AfficherGrilleSkill(Skill):
 
 
 # =============================================================================
+# État interne post-grille
+# =============================================================================
+
+# Flag interne : mis à True par compilation_metriques/compilation_temps
+# quand des changements sont détectés. Remis à False quand l'utilisateur
+# complète l'étape de documentation dans le quiz.
+# Consulté par confirmation_documentation pour décider si un rappel est nécessaire.
+_documentation_requise = False
+
+
+# =============================================================================
 # Fonctions post-grille
 # =============================================================================
 
 def compilation_metriques(resultats):
-    """Compile les métriques du knowledge. Appelée après l'affichage de la grille."""
+    """Compile les métriques du knowledge. Appelée après l'affichage de la grille.
+
+    Si des changements de métriques sont détectés, met _documentation_requise à True.
+    """
+    global _documentation_requise
+    # TODO: implémenter la détection de changements de métriques
+    # Si changements détectés : _documentation_requise = True
     pass
 
 
 def compilation_temps(resultats):
-    """Compile les données de temps du knowledge. Appelée après l'affichage de la grille."""
+    """Compile les données de temps du knowledge. Appelée après l'affichage de la grille.
+
+    Si du temps a été accumulé (tâche exécutée), met _documentation_requise à True.
+    """
+    global _documentation_requise
+    # TODO: implémenter la détection de temps accumulé
+    # Si temps accumulé : _documentation_requise = True
     pass
 
 
 def confirmation_documentation(resultats):
     """Règle de conformité pré-sauvegarde : rappel de documentation.
 
-    Vérifie si l'utilisateur a déjà complété l'étape de documentation
-    (disponible comme choix au niveau principal du knowledge).
-    - Si déjà documenté : ne rien demander, passer directement.
-    - Si pas encore documenté et que des changements ont été détectés
-      (métriques/temps) : utiliser AskUserQuestion pour suggérer à
-      l'utilisateur de documenter avant la sauvegarde.
-      L'utilisateur peut passer (Skip) — c'est un rappel, pas un bloqueur.
+    Consulte le flag _documentation_requise (posé par compilation_metriques
+    et compilation_temps). Si True, rappelle à l'utilisateur via
+    AskUserQuestion qu'il y a des changements non documentés.
+    L'utilisateur peut passer (Skip) — c'est un rappel, pas un bloqueur.
 
-    Retourne True si déjà documenté ou si l'utilisateur accepte,
-    False s'il passe.
+    Si _documentation_requise est False (pas de changements détectés,
+    ou l'utilisateur a déjà documenté via le quiz), passe directement.
+
+    Retourne True si pas de rappel nécessaire ou si l'utilisateur accepte,
+    False s'il passe le rappel.
     """
+    # TODO: implémenter le rappel AskUserQuestion quand _documentation_requise est True
     pass
+
+
+def reset_documentation_requise():
+    """Remet le flag à False. Appelée quand l'utilisateur complète
+    l'étape de documentation dans le quiz de validation."""
+    global _documentation_requise
+    _documentation_requise = False
 
 
 def sauvegarde(resultats):
