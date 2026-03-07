@@ -16,7 +16,7 @@ Vrai, Faux, Passer
 |----|-----------|--------------------------------|
 | A1 | fonction  | >>> Je suis la fonction A1.    |
 | A2 | programme | >>> Je suis le programme A2.   |
-| A3 | fonction  | >>> Je suis la fonction A3.    |
+| A3 | executer_demande | (programmatique - exécute la commande initiale de session) |
 
 ### Knowledge B (lettre: B)
 

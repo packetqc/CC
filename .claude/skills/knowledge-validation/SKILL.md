@@ -88,6 +88,7 @@ Afficher avec AskUserQuestion (multiSelect: false) :
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
 - options: construire dynamiquement à partir des questions du knowledge dans `methodologie.md`, plus `Passer` comme dernière option
+- Pour les questions de type `executer_demande`, afficher le label "Exécuter la demande" au lieu de l'identifiant de la question (ex: au lieu de "A3", afficher "Exécuter la demande")
 - Chaque question lance le Sous-knowledge correspondant
 - **Passer** retourne au Knowledge Principal
 - Les options restent TOUJOURS visibles
@@ -95,11 +96,24 @@ Pour chaque knowledge, afficher avec AskUserQuestion :
 
 ### Niveau 3 : Sous-knowledge
 
-Pour chaque question, afficher avec AskUserQuestion :
-- header: l'identifiant de la question (ex: "A1")
-- options: utiliser les choix définis dans `sous_knowledge.choix` de `methodologie.md`
-- Si **Vrai** : afficher le message de la fonction ou du programme associé (voir tableau ci-dessus), puis retourner au Knowledge Secondaire
-- Si **Faux** ou **Passer** : enregistrer la réponse et retourner au Knowledge Secondaire
+Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` :
+
+**Si l'action est `executer_demande` (ex: A3) :**
+- Ne PAS afficher de choix Vrai/Faux/Passer à l'utilisateur
+- Cette option est entièrement programmatique et non modifiable par l'humain dans le fichier de configuration
+- Capturer le message initial de l'utilisateur au démarrage de la session (la première demande qu'il a tapée)
+- Exécuter ce message comme commande shell via l'outil Bash
+- Si le code de retour est 0 : enregistrer "Vrai" pour cette question
+- Si le code de retour est != 0 : enregistrer "Faux" pour cette question
+- Afficher le résultat à l'utilisateur (ex: "Commande exécutée → Vrai" ou "Commande exécutée → Faux")
+- Retourner automatiquement au Knowledge Secondaire
+
+**Pour toutes les autres actions (fonction, programme) :**
+- Afficher avec AskUserQuestion :
+  - header: l'identifiant de la question (ex: "A1")
+  - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodologie.md`
+  - Si **Vrai** : afficher le message de la fonction ou du programme associé (voir tableau ci-dessus), puis retourner au Knowledge Secondaire
+  - Si **Faux** ou **Passer** : enregistrer la réponse et retourner au Knowledge Secondaire
 
 ### Grille de résultats
 
