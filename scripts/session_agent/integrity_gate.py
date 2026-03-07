@@ -260,7 +260,6 @@ def check_methodology_consistency() -> list:
     root = _repo_root()
 
     methodology_files = [
-        os.path.join(root, "methodology", "session-protocol.md"),
         os.path.join(root, "methodology", "interactive-work-sessions.md"),
         os.path.join(root, "methodology", "agent-identity.md"),
     ]
