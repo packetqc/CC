@@ -261,13 +261,18 @@ def compilation_temps(resultats):
 
 
 def confirmation_documentation(resultats):
-    """Vérifie si des changements ont été détectés et rappelle à l'utilisateur de documenter.
+    """Règle de conformité pré-sauvegarde : rappel de documentation.
 
-    Règle de conformité : si les compilations (métriques/temps) révèlent des changements,
-    demander confirmation à l'utilisateur avant la sauvegarde.
-    L'utilisateur peut passer, mais reçoit un rappel que la documentation est importante.
+    Vérifie si l'utilisateur a déjà complété l'étape de documentation
+    (disponible comme choix au niveau principal du knowledge).
+    - Si déjà documenté : ne rien demander, passer directement.
+    - Si pas encore documenté et que des changements ont été détectés
+      (métriques/temps) : utiliser AskUserQuestion pour suggérer à
+      l'utilisateur de documenter avant la sauvegarde.
+      L'utilisateur peut passer (Skip) — c'est un rappel, pas un bloqueur.
 
-    Retourne True si l'utilisateur confirme, False s'il passe.
+    Retourne True si déjà documenté ou si l'utilisateur accepte,
+    False s'il passe.
     """
     pass
 
