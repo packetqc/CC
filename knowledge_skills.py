@@ -250,23 +250,26 @@ class AfficherGrilleSkill(Skill):
 # État interne post-grille
 # =============================================================================
 
-# Flag interne : mis à True au moment de l'exécution réussie de la demande
-# (résultat "Vrai" à executer_demande). Les compilations le confirment si
-# elles détectent des changements. Remis à False quand l'utilisateur complète
-# l'étape de documentation dans le quiz.
+# Flag interne : documentation requise suite à des changements détectés.
+# - Remis à False quand l'exécution DÉMARRE (A3) — ardoise propre.
+# - Mis à True par les compilations si elles détectent des changements.
+# - Consulté par confirmation_documentation qui le compare avec le résultat
+#   de l'étape Documentation (dernière rangée du quiz) pour décider si un
+#   rappel est nécessaire.
 _documentation_requise = False
 
 
 def set_documentation_requise():
-    """Met le flag à True. Appelée quand une exécution de demande réussit
-    (résultat Vrai à executer_demande)."""
+    """Met le flag à True. Appelée par les compilations quand elles
+    détectent des changements qui nécessitent documentation."""
     global _documentation_requise
     _documentation_requise = True
 
 
 def reset_documentation_requise():
-    """Remet le flag à False. Appelée quand l'utilisateur complète
-    l'étape de documentation dans le quiz de validation."""
+    """Remet le flag à False. Appelée quand l'exécution de la demande
+    DÉMARRE (A3) — on repart à zéro avant de savoir s'il y aura
+    des changements."""
     global _documentation_requise
     _documentation_requise = False
 
@@ -278,16 +281,24 @@ def reset_documentation_requise():
 def compilation_metriques(resultats):
     """Compile les métriques du knowledge. Appelée après l'affichage de la grille.
 
-    Ne touche pas au flag _documentation_requise. Se contente de compiler.
+    Détecte si des changements de métriques ont eu lieu. Si oui,
+    met _documentation_requise à True via set_documentation_requise().
     """
+    global _documentation_requise
+    # TODO: implémenter la détection de changements de métriques
+    # Si changements détectés : set_documentation_requise()
     pass
 
 
 def compilation_temps(resultats):
     """Compile les données de temps du knowledge. Appelée après l'affichage de la grille.
 
-    Ne touche pas au flag _documentation_requise. Se contente de compiler.
+    Détecte si du temps a été accumulé (changements). Si oui,
+    met _documentation_requise à True via set_documentation_requise().
     """
+    global _documentation_requise
+    # TODO: implémenter la détection de temps accumulé
+    # Si changements détectés : set_documentation_requise()
     pass
 
 
@@ -301,18 +312,43 @@ def compilation_temps(resultats):
 def confirmation_documentation(resultats):
     """Sous-fonction pré-sauvegarde #1 : rappel de documentation.
 
-    Consulte le flag _documentation_requise.
-    - Si True : rappelle à l'utilisateur via AskUserQuestion que des
-      changements non documentés ont été détectés. Suggère de documenter
-      avant la sauvegarde. L'utilisateur peut passer (Skip) — rappel
-      de discipline, pas un bloqueur.
-    - Si False : passe directement sans rien demander.
+    Compare deux valeurs :
+    1. Le flag interne _documentation_requise (mis à True par les compilations
+       si des changements ont été détectés)
+    2. Le résultat de l'étape Documentation dans le quiz (dernière rangée
+       du tableau des résultats — le dernier knowledge au niveau principal)
 
-    Retourne True si pas de rappel nécessaire ou si l'utilisateur accepte,
-    False s'il passe le rappel.
+    Logique de comparaison :
+    - Flag False → passe (rien à documenter, pas de changements)
+    - Flag True + résultat doc "Vrai" → passe (l'utilisateur a documenté)
+    - Flag True + résultat doc "--"/"Faux"/"Passer" → suggérer via
+      AskUserQuestion (rappel de discipline, pas un bloqueur)
+
+    Retourne True si pas de rappel nécessaire ou si l'utilisateur a documenté,
+    False si l'utilisateur n'a pas documenté et passe le rappel.
     """
-    # TODO: implémenter le rappel AskUserQuestion quand _documentation_requise est True
-    pass
+    if not _documentation_requise:
+        return True
+
+    # Chercher le dernier knowledge (étape Documentation) dans les résultats
+    knowledge_names = list(resultats.keys()) if resultats else []
+    if not knowledge_names:
+        return True
+
+    dernier_knowledge = knowledge_names[-1]
+    resultats_doc = resultats.get(dernier_knowledge, {})
+
+    # Vérifier si au moins une question du dernier knowledge a "Vrai"
+    # (l'utilisateur a complété l'étape de documentation)
+    documentation_faite = any(v == "Vrai" for v in resultats_doc.values())
+
+    if documentation_faite:
+        return True
+
+    # Flag True + documentation non faite → rappel nécessaire
+    # TODO: AskUserQuestion pour suggérer la documentation
+    # L'utilisateur peut Skip — c'est un rappel, pas un bloqueur
+    return False
 
 
 def pre_sauvegarde(resultats):

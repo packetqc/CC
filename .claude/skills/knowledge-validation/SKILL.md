@@ -87,9 +87,9 @@ Pour construire les résultats par défaut : pour chaque knowledge dans `methodo
    - Via git direct : `git fetch origin main && git checkout main && git merge <branche> && git push origin main && git checkout <branche>`
    - Si toutes échouent : afficher "Note: le merge vers main doit être fait manuellement."
 6. Afficher la grille de résultats
-7. Exécuter `compilation_metriques(resultats)` depuis `knowledge_skills.py`
-8. Exécuter `compilation_temps(resultats)` depuis `knowledge_skills.py`
-9. Exécuter `pre_sauvegarde(resultats)` depuis `knowledge_skills.py` — **Pré-sauvegarde** : exécute les règles de conformité avant la sauvegarde. Première sous-fonction : `confirmation_documentation` (rappel si `_documentation_requise` est True). D'autres règles suivront.
+7. Exécuter `compilation_metriques(resultats)` depuis `knowledge_skills.py` — si des changements de métriques sont détectés, met `_documentation_requise = True`
+8. Exécuter `compilation_temps(resultats)` depuis `knowledge_skills.py` — si des changements de temps sont détectés, met `_documentation_requise = True`
+9. Exécuter `pre_sauvegarde(resultats)` depuis `knowledge_skills.py` — **Pré-sauvegarde** : exécute les règles de conformité. Première sous-fonction : `confirmation_documentation` (compare le flag interne avec le résultat de l'étape Documentation du quiz). D'autres règles suivront.
 10. Exécuter `sauvegarde(resultats)` depuis `knowledge_skills.py`
 Note : le fichier `knowledge_resultats.json` reste sur la branche de travail avec les résultats. Il sera nettoyé au démarrage de la prochaine session.
 
@@ -320,15 +320,20 @@ Exemple avec 5 knowledge dont certains ont des nombres de questions différents 
 - **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
 
 **Fonctions post-grille :** Ces fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-10 ci-dessus :
-1. `compilation_metriques(resultats)` — Compile les métriques (ne touche pas au flag)
-2. `compilation_temps(resultats)` — Compile le temps (ne touche pas au flag)
-3. `pre_sauvegarde(resultats)` — Étape 9 : exécute les règles de conformité pré-sauvegarde. Contient actuellement `confirmation_documentation` comme première sous-fonction. D'autres règles seront ajoutées ici.
+1. `compilation_metriques(resultats)` — Compile les métriques. Si des changements sont détectés, met `_documentation_requise = True`
+2. `compilation_temps(resultats)` — Compile le temps. Si des changements sont détectés, met `_documentation_requise = True`
+3. `pre_sauvegarde(resultats)` — Étape 9 : exécute les règles de conformité pré-sauvegarde. Première sous-fonction : `confirmation_documentation`. D'autres règles suivront.
 4. `sauvegarde(resultats)` — Sauvegarde les résultats
 
-**Mécanisme du flag `_documentation_requise` :**
-- Mis à `True` par `set_documentation_requise()` quand une exécution de demande réussit (résultat Vrai à executer_demande / A3)
-- Remis à `False` par `reset_documentation_requise()` quand l'utilisateur complète l'étape de documentation dans le quiz (choix au niveau principal, à définir)
-- Consulté par `confirmation_documentation` (sous-fonction de `pre_sauvegarde`) : si `True` → rappel via AskUserQuestion, si `False` → passe directement. L'utilisateur peut toujours passer (Skip) — rappel de discipline, pas un bloqueur.
+**Mécanisme du flag `_documentation_requise` — cycle de vie :**
+1. **Exécution démarre (A3)** → `reset_documentation_requise()` → flag = `False` (ardoise propre — on ne sait pas encore s'il y aura des changements)
+2. **Compilations** (étapes 7-8) → détectent des changements → `set_documentation_requise()` → flag = `True` (documentation requise car changements détectés)
+3. **`confirmation_documentation`** (sous-fonction de `pre_sauvegarde`, étape 9) → **compare deux valeurs** :
+   - Le flag interne `_documentation_requise` (True si les compilations ont détecté des changements)
+   - Le résultat de l'étape Documentation dans le quiz (dernière rangée du tableau des résultats = dernier knowledge au niveau principal, à venir)
+   - **Flag `False`** → passe (pas de changements, rien à documenter)
+   - **Flag `True` + résultat doc `Vrai`** → passe (l'utilisateur a documenté)
+   - **Flag `True` + résultat doc `--`/`Faux`/`Passer`** → suggérer via AskUserQuestion (rappel de discipline, pas un bloqueur — l'utilisateur peut Skip, il repassera dans ~15 min)
 
 Ces fonctions sont **toujours** exécutées après la grille, que le quiz soit complet ou non. L'appel se fait via `from knowledge_skills import compilation_metriques, compilation_temps, pre_sauvegarde, sauvegarde`.
 
