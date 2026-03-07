@@ -157,17 +157,32 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 
 ### Niveau 2 : Knowledge Secondaire
 
-**Détection automatique des valeurs :**
-À la première entrée dans un Knowledge Secondaire, AVANT d'afficher le menu, Claude doit auto-détecter les valeurs correspondant à chaque question (sauf `executer_demande` et `tous`) en analysant :
-- Le message initial de l'utilisateur (ou `demande_reformulee` si non null)
-- Le contexte du projet (fichiers de config, etc.)
-- Le champ `choix` de chaque question comme indice sémantique (ex: "Confirmez le titre" → chercher un titre)
+**Décodage et détection automatique des valeurs :**
+À la première entrée dans un Knowledge Secondaire, AVANT d'afficher le menu, Claude doit décoder la demande de l'utilisateur et auto-détecter les valeurs correspondant à chaque question (sauf `executer_demande` et `tous`).
 
-Les valeurs détectées sont stockées dans `valeurs_detectees` de `knowledge_resultats.json` :
+**Parsing de la demande utilisateur :**
+Le message initial (ou `demande_reformulee` si non null) est structuré ainsi :
+1. **Ligne 1** = la commande de l'utilisateur (contient souvent le titre). Exemples : `project create Mon Super Projet`, `build mon-app`
+2. **Texte après la ligne 1** (tout ce qui suit, SAUF le bloc JSON `{"resultats": ...}` de pré-remplissage) = la **description** de la demande
+3. Le bloc JSON de pré-remplissage (s'il existe) est ignoré pour le décodage — il a déjà été traité au démarrage
+
+**Extraction des valeurs :**
+- **A1 (titre)** : extraire le titre depuis la ligne 1 de la commande (ex: dans `project create Mon Super Projet` → titre = `"Mon Super Projet"`)
+- **A2 (description)** : extraire tout le texte après la ligne 1 (hors bloc JSON). C'est la description brute de l'utilisateur. Claude doit aussi produire une **version synthétisée** (résumé concis de la description)
+- **Autres questions** : détecter selon le champ `choix` comme indice sémantique et le contexte du projet
+
+**Format de stockage dans `valeurs_detectees` de `knowledge_resultats.json` :**
 ```json
-"valeurs_detectees": {"A1": "Mon Projet", "A2": "Description du projet", "A3": "nom-projet"}
+"valeurs_detectees": {
+  "A1": {"valeur": "Mon Super Projet", "original": null},
+  "A2": {"valeur": "Synthèse concise de la description", "original": "Le texte complet de la description fournie par l'utilisateur sur plusieurs lignes..."},
+  "A3": {"valeur": "nom-projet", "original": null}
+}
 ```
-Si une valeur ne peut pas être détectée, mettre `null`. Les valeurs détectées sont recalculées à chaque entrée dans le knowledge secondaire (pour tenir compte de reformulations).
+- `valeur` : la valeur synthétisée/nettoyée par Claude — c'est ce qui sera utilisé par le système en aval
+- `original` : le texte brut extrait de la demande (utile surtout pour A2 où l'utilisateur a écrit un long texte). `null` si pas de texte brut distinct (ex: A1 où la valeur est déjà concise)
+- Si une valeur ne peut pas être détectée, mettre `{"valeur": null, "original": null}`
+- Les valeurs détectées sont recalculées à chaque entrée dans le knowledge secondaire (pour tenir compte de reformulations)
 
 **Affichage du menu :**
 Pour chaque knowledge, afficher avec AskUserQuestion :
@@ -176,7 +191,7 @@ Pour chaque knowledge, afficher avec AskUserQuestion :
 - Lire toutes les questions du knowledge depuis `methodology-knowledge.md`
 - **Options (non-executer_demande, non-tous)** :
   - label: le champ `choix` de la question (ex: "Confirmez le titre")
-  - description: la **valeur détectée** (ex: `"Mon Projet"`) ou `"(non détecté)"` si null. Si la question est déjà répondue, ajouter un indicateur : `"Mon Projet ✓"`
+  - description: la valeur `valeur` de `valeurs_detectees[ID]` (ex: `"Mon Super Projet"`) ou `"(non détecté)"` si `valeur` est null. Si la question est déjà répondue, ajouter un indicateur : `"Mon Super Projet ✓"`
 - **Options `executer_demande`** : label "Exécuter la demande", description comme avant
 - **Options `tous`** : label du champ `choix`, description vide
 - Appliquer la pagination sans option de contrôle (Skip natif remplace Passer)
@@ -200,7 +215,7 @@ Si on entre dans le Knowledge Secondaire et que `demande_reformulee` est non `nu
 3. Si l'utilisateur clique sur "Exécuter la demande" → lancer l'exécution
 4. Si l'utilisateur fait Skip → retourner au principal ou terminer
 
-Les questions pré-remplies sont affichées dans le menu avec un indicateur visuel (la valeur confirmée suivie de ✓ dans la description, ex: `"Mon Projet ✓"`) mais ne déclenchent AUCUN comportement automatique. C'est l'utilisateur qui décide quand exécuter.
+Les questions pré-remplies sont affichées dans le menu avec un indicateur visuel (la `valeur` confirmée suivie de ✓ dans la description, ex: `"Mon Super Projet ✓"`) mais ne déclenchent AUCUN comportement automatique. C'est l'utilisateur qui décide quand exécuter.
 
 ### Niveau 3 : Sous-knowledge
 
@@ -220,10 +235,11 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodology-knowl
 - Ne PAS afficher de choix Vrai/Faux/Passer à l'utilisateur
 - Cette option est entièrement programmatique et non modifiable par l'humain dans le fichier de configuration
 - **Déterminer la demande à exécuter** : lire `demande_reformulee` dans `knowledge_resultats.json`. Si non `null`, utiliser cette valeur. Sinon, utiliser le message initial de l'utilisateur au démarrage de la session.
-- **Collecter le contexte** : lire dans `knowledge_resultats.json` les réponses ET les valeurs détectées de TOUTES les questions qui précèdent dans ce knowledge. Pour chaque question précédente, inclure le résultat (Vrai/Faux/Passer) et la valeur confirmée/corrigée depuis `valeurs_detectees`. Construire un objet JSON enrichi :
+- **Collecter le contexte** : lire dans `knowledge_resultats.json` les réponses ET les valeurs détectées de TOUTES les questions qui précèdent dans ce knowledge. Pour chaque question précédente, inclure le résultat (Vrai/Faux/Passer) et la valeur confirmée/corrigée (champ `valeur` de `valeurs_detectees`). Construire un objet JSON enrichi :
   ```json
-  {"A1": {"resultat": "Vrai", "valeur": "Mon Projet"}, "A2": {"resultat": "Vrai", "valeur": "Description corrigée"}}
+  {"A1": {"resultat": "Vrai", "valeur": "Mon Super Projet"}, "A2": {"resultat": "Vrai", "valeur": "Application de gestion de tâches avec interface web"}, "A3": {"resultat": "Vrai", "valeur": "nom-projet"}}
   ```
+  Note : c'est la `valeur` (synthèse confirmée) qui est transmise, pas l'`original`. C'est ce que l'utilisateur a validé ou corrigé au niveau 3.
   Ce contexte sera transmis au programme via `--context`.
 
 **Checkpoint — Vérification pré-exécution (survie à la compaction) :**
@@ -331,14 +347,31 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 - Si pas de champ `methodology` : exécuter normalement sans lecture supplémentaire
 - **Afficher avec AskUserQuestion :**
   - header: l'identifiant de la question (ex: "A1")
-  - question: `"Confirmez: <valeur_detectee>"` — où `<valeur_detectee>` est la valeur issue de `valeurs_detectees` dans `knowledge_resultats.json`. Si la valeur est `null` : utiliser `"Confirmez: (non détecté)"`.
-    - Exemple : pour A1 avec valeur détectée "Mon Projet" → question = `"Confirmez: Mon Projet"`
+  - **Construction de la question** — deux cas selon que `original` existe ou non dans `valeurs_detectees[ID]` :
+    - **Si `original` est non null** (ex: A2 description — l'utilisateur a écrit un long texte) :
+      La question doit montrer les DEUX versions pour comparaison :
+      ```
+      Confirmez: <valeur (synthèse)>
+
+      Texte original: <original>
+      ```
+      Exemple pour A2 :
+      ```
+      Confirmez: Application de gestion de tâches avec interface web
+
+      Texte original: Je veux créer une application qui permet de gérer des tâches, avec une interface web moderne, des notifications, et un système de priorités...
+      ```
+      L'utilisateur voit la synthèse de Claude ET son texte original, et peut juger si la synthèse est fidèle. Ce qui sera utilisé en aval par le système, c'est la `valeur` (la synthèse), pas l'original.
+    - **Si `original` est null** (ex: A1 titre — valeur déjà concise) :
+      Question simple : `"Confirmez: <valeur>"` (ex: `"Confirmez: Mon Super Projet"`)
+    - **Si `valeur` est null** : `"Confirmez: (non détecté)"`
   - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodology-knowledge.md` (Vrai, Faux, Passer)
-    - **Vrai** : confirme la valeur détectée. Enregistrer "Vrai", mettre à jour `valeurs_detectees` (conserver la valeur), afficher le message associé, retourner au Knowledge Secondaire
-    - **Faux** : rejette la valeur. Enregistrer "Faux", retourner au Knowledge Secondaire
+    - **Vrai** : confirme la synthèse. Enregistrer "Vrai", conserver `valeurs_detectees`, afficher le message associé, retourner au Knowledge Secondaire
+    - **Faux** : rejette la synthèse. Enregistrer "Faux", retourner au Knowledge Secondaire
     - **Passer** : enregistrer "Passer", retourner au Knowledge Secondaire
-    - **Other (champ texte libre)** : l'utilisateur tape une **valeur corrigée** (ex: un autre titre). Traiter comme **Vrai** avec correction :
-      - Mettre à jour `valeurs_detectees[ID]` avec la nouvelle valeur saisie
+    - **Other (champ texte libre)** : l'utilisateur tape une **valeur corrigée** (reformulation, précision, ou réécriture complète). Traiter comme **Vrai** avec correction :
+      - Mettre à jour `valeurs_detectees[ID].valeur` avec la nouvelle valeur saisie (la synthèse est remplacée)
+      - L'`original` reste inchangé (c'est le texte brut de l'utilisateur)
       - Enregistrer "Vrai" pour cette question
       - Afficher le message associé
       - Retourner au Knowledge Secondaire
