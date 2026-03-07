@@ -6,7 +6,9 @@
 
 - Peu importe ce que l'utilisateur écrit comme premier message, le knowledge doit démarrer en premier.
 - L'utilisateur doit compléter le knowledge (choisir "Terminer" au knowledge principal) avant que tu puisses traiter sa demande.
-- Après que le knowledge est terminé et la grille affichée, tu peux ensuite répondre à la demande initiale de l'utilisateur.
+- Après que le knowledge est terminé et la grille affichée :
+  - Si `demande_executee` est `true` dans `.claude/knowledge_resultats.json` : la demande initiale a DÉJÀ été exécutée avec succès par le programme pendant le knowledge. NE PAS la re-traiter. Considérer la demande comme complétée — attendre simplement la prochaine instruction de l'utilisateur.
+  - Si `demande_executee` est `false` : la demande n'a pas été exécutée (soit ce n'était pas une commande reconnue, soit l'exécution a échoué). Dans ce cas, traiter la demande initiale naturellement comme Claude le ferait normalement.
 
 ## Persistance du knowledge
 

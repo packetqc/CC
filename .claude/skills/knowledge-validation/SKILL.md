@@ -175,11 +175,16 @@ L'exécution se fait **directement dans le flow du knowledge-validation** sans a
       - Les mots-clés comme indices (pas comme critères absolus)
       - Détection de syntaxe exacte (ex: `project create Mon Titre` → route `project-create`)
       - Détection en langage naturel (ex: "peux-tu créer le projet X" → route `project-create`, param title = "X")
+      - **Règles de matching des commandes multi-mots :**
+        - Analyser le champ `syntaxe` de chaque route pour distinguer les commandes simples (un seul mot, ex: `build`) des commandes composées (multi-mots, ex: `project create [title]`)
+        - Pour les commandes composées : la demande DOIT contenir tous les mots de la commande (ex: "project create") pour matcher. Le mot primaire seul (ex: "project") ne suffit PAS — il pourrait correspondre à d'autres sous-commandes futures (project view, project list, etc.)
+        - Pour les commandes simples (un seul mot, sans sous-commande) : un match sur ce mot unique est suffisant
+        - Si la demande contient un mot primaire de commande composée mais sans sous-commande spécifique → **aucune route ne correspond** → traiter comme pas de match
    c. **Si une route correspond** : exécuter via Bash :
       - Sans paramètres : `python3 executer_demande.py --route <id> --context '<json_contexte>'`
       - Avec paramètres : `python3 executer_demande.py --route <id> --args "<valeur>" --context '<json_contexte>'`
       - Toujours passer `--context` avec le JSON des réponses précédentes
-   d. **Si aucune route ne correspond** (ex: "bonjour") : ne rien exécuter → Résultat = **Faux**
+   d. **Si aucune route ne correspond** (ex: "bonjour", "project" seul) : ne rien exécuter → Résultat = **Faux**
    e. **Règles strictes** : NE JAMAIS répondre à la demande, NE JAMAIS inventer une route, NE JAMAIS créer le fichier preuve_execution.json
 4. Vérifier la preuve d'exécution :
    - Lire le fichier `.claude/preuve_execution.json` avec l'outil Read
