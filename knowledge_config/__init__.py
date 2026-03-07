@@ -19,7 +19,7 @@ def charger_methodologie(chemin=None):
     """
     if chemin is None:
         chemin = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              "methodologie.md")
+                              "methodology-knowledge.md")
 
     with open(chemin, "r", encoding="utf-8") as f:
         contenu = f.read()
