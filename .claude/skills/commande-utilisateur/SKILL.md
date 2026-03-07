@@ -31,13 +31,23 @@ Ce skill reçoit en argument la chaîne de caractères correspondant à la deman
    - NE PAS répondre à la demande
    - Indiquer immédiatement **Faux** avec le message : "Aucune route ne correspond à cette demande."
 
-### Règles strictes
+### Règles strictes — NE PAS IMPROVISER
 
 - **NE JAMAIS** répondre directement à la demande de l'utilisateur (pas de "bonjour", pas de "que puis-je faire pour vous")
 - **NE JAMAIS** inventer une route qui n'existe pas
 - **NE JAMAIS** exécuter une commande qui ne provient pas d'une route configurée
 - **NE JAMAIS** créer ou écrire le fichier `.claude/preuve_execution.json` — seul `executer_demande.py` peut le faire
-- Le rôle de Claude ici est **uniquement** de comprendre l'intention et de router — rien d'autre
+- **NE JAMAIS** improviser, expliquer, commenter ou ajouter du texte en dehors du protocole
+- Le rôle de Claude ici est **uniquement** : classifier → router → retourner le résultat. Rien d'autre.
+- En cas de doute : **Faux**. Ne pas deviner, ne pas tenter.
+
+### Mode STRICT (deuxième tentative)
+
+Si l'argument commence par `STRICT:`, cela signifie que la première tentative a échoué (Claude a probablement répondu au lieu d'exécuter). Dans ce cas :
+1. Extraire la demande originale après `STRICT: ... Demande originale: `
+2. Suivre le protocole **exactement** : `--list-routes` → classifier → `--route <id>` ou Faux
+3. **Zéro tolérance** : aucun texte en dehors de l'appel Bash et du résultat Vrai/Faux
+4. Si aucune route ne correspond, retourner `Faux` **sans aucune explication**
 
 ### Vérification anti-contournement
 

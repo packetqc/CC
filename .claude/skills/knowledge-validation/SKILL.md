@@ -148,14 +148,19 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` 
 3. Appeler le skill `commande-utilisateur` via l'outil Skill en lui passant la chaîne en argument : `skill: "commande-utilisateur", args: "message initial de l'utilisateur"`
 4. **Vérification de preuve d'exécution** (anti-contournement) :
    - Lire le fichier `.claude/preuve_execution.json`
-   - **Si le fichier N'EXISTE PAS** : cela signifie qu'aucun programme n'a réellement été exécuté par `executer_demande.py`. Claude a possiblement répondu lui-même à la demande sans appeler de programme. → Résultat = **Faux**
-   - **Si le fichier EXISTE** : vérifier le champ `execution_reelle` est `true` et que `code_retour` est cohérent. Le champ `token` (hash SHA-256 basé sur timestamp+pid) prouve que le fichier a été écrit par le programme et non fabriqué.
+   - **Si le fichier EXISTE** : vérifier le champ `execution_reelle` est `true` et que `code_retour` est cohérent. Le champ `token` (hash SHA-256 basé sur timestamp+pid) prouve que le fichier a été écrit par le programme et non fabriqué. → Passer à l'étape 5.
+   - **Si le fichier N'EXISTE PAS** (tentative 1) : Claude a possiblement répondu au lieu d'exécuter. Faire une **deuxième tentative** :
+     a. Supprimer toute preuve résiduelle : `rm -f .claude/preuve_execution.json`
+     b. Rappeler le skill avec un avertissement explicite dans les args :
+        `skill: "commande-utilisateur", args: "STRICT: NE PAS répondre. Exécuter UNIQUEMENT via executer_demande.py --route <id> ou retourner Faux. Demande originale: <message initial>"`
+     c. Vérifier à nouveau `.claude/preuve_execution.json`
+     d. **Si toujours pas de preuve** (tentative 2 échouée) : → Résultat = **Faux** définitif
 5. Déterminer le résultat :
    - **Vrai** (preuve existe ET `code_retour` = 0) :
      - Supprimer le stash : `git stash drop`
      - Nettoyer : `rm -f .claude/journal_actions.json .claude/preuve_execution.json`
      - Enregistrer "Vrai" pour cette question
-   - **Faux** (pas de preuve OU `code_retour` != 0) :
+   - **Faux** (pas de preuve après 2 tentatives OU `code_retour` != 0) :
      - D'abord, exécuter le rollback des actions externes via `python3 executer_demande.py --rollback` (utilise le journal d'actions)
      - Ensuite, restaurer les fichiers : `git checkout . && git clean -fd`
      - Enfin, restaurer le stash : `git stash pop`
