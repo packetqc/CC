@@ -273,39 +273,41 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 
 Quand l'utilisateur fait **Skip** au niveau principal, construire et afficher un tableau dynamique basé sur les knowledge et questions présents dans `methodology-knowledge.md` :
 
-- **Colonnes** : une par knowledge trouvé (ex: Knw A, Knw B, Knw C, Knw D...)
-- **Lignes** : autant que le nombre maximum de questions parmi tous les knowledge
+- **Lignes** : une par knowledge trouvé (ex: Knw A, Knw B, Knw C, Knw D...)
+- **Colonnes** : autant que le nombre maximum de questions parmi tous les knowledge (numérotées 1, 2, 3...)
 - **Valeurs** : remplacer par la réponse (Vrai, Faux, Passer) ou `--` si non répondu
 - **Largeur de colonne** : 10 caractères, valeurs centrées
 
 Exemple avec 3 knowledge de 3 questions chacun :
 ```
         GRILLE DE RÉSULTATS
-+-----+----------+----------+----------+
-|     |  Knw A   |  Knw B   |  Knw C   |
-+=====+==========+==========+==========+
-|  1  |   Vrai   |    --    |  Faux    |
-+-----+----------+----------+----------+
-|  2  |    --    |   Vrai   |    --    |
-+-----+----------+----------+----------+
-|  3  |  Passer  |    --    |   Vrai   |
-+-----+----------+----------+----------+
++-------+----------+----------+----------+
+|       |    1     |    2     |    3     |
++=======+==========+==========+==========+
+| Knw A |   Vrai   |    --    |  Passer  |
++-------+----------+----------+----------+
+| Knw B |    --    |   Vrai   |    --    |
++-------+----------+----------+----------+
+| Knw C |  Faux    |    --    |   Vrai   |
++-------+----------+----------+----------+
 ```
 
 Exemple avec 5 knowledge dont certains ont des nombres de questions différents :
 ```
         GRILLE DE RÉSULTATS
-+-----+----------+----------+----------+----------+----------+
-|     |  Knw A   |  Knw B   |  Knw C   |  Knw D   |  Knw E   |
-+=====+==========+==========+==========+==========+==========+
-|  1  |   Vrai   |    --    |  Faux    |   Vrai   |    --    |
-+-----+----------+----------+----------+----------+----------+
-|  2  |    --    |   Vrai   |    --    |    --    |   Vrai   |
-+-----+----------+----------+----------+----------+----------+
-|  3  |  Passer  |    --    |   Vrai   |          |    --    |
-+-----+----------+----------+----------+----------+----------+
-|  4  |          |          |          |          |  Faux    |
-+-----+----------+----------+----------+----------+----------+
++-------+----------+----------+----------+----------+
+|       |    1     |    2     |    3     |    4     |
++=======+==========+==========+==========+==========+
+| Knw A |   Vrai   |    --    |  Passer  |          |
++-------+----------+----------+----------+----------+
+| Knw B |    --    |   Vrai   |    --    |          |
++-------+----------+----------+----------+----------+
+| Knw C |  Faux    |    --    |   Vrai   |          |
++-------+----------+----------+----------+----------+
+| Knw D |   Vrai   |    --    |          |          |
++-------+----------+----------+----------+----------+
+| Knw E |    --    |   Vrai   |    --    |  Faux    |
++-------+----------+----------+----------+----------+
 ```
 (cellules vides si le knowledge n'a pas autant de questions)
 
