@@ -89,7 +89,8 @@ Pour construire les résultats par défaut : pour chaque knowledge dans `methodo
 6. Afficher la grille de résultats
 7. Exécuter `compilation_metriques(resultats)` depuis `knowledge_skills.py`
 8. Exécuter `compilation_temps(resultats)` depuis `knowledge_skills.py`
-9. Exécuter `sauvegarde(resultats)` depuis `knowledge_skills.py`
+9. Exécuter `confirmation_documentation(resultats)` depuis `knowledge_skills.py` — **Règle de conformité** : si les compilations (étapes 7-8) révèlent que des métriques ou du temps ont changé (ex: une tâche a été exécutée), demander à l'utilisateur avec AskUserQuestion s'il souhaite documenter ces changements avant la sauvegarde. L'utilisateur peut passer (Skip), mais reçoit un rappel que la documentation est importante. C'est la première règle de conformité pré-sauvegarde.
+10. Exécuter `sauvegarde(resultats)` depuis `knowledge_skills.py`
 Note : le fichier `knowledge_resultats.json` reste sur la branche de travail avec les résultats. Il sera nettoyé au démarrage de la prochaine session.
 
 ### Configuration des actions
@@ -318,12 +319,13 @@ Exemple avec 5 knowledge dont certains ont des nombres de questions différents 
 - **Si complet** (aucun `"--"`) : afficher `message_fin_complet` de `methodology-knowledge.md`
 - **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
 
-**Fonctions post-grille :** Ces 3 fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-8-9 ci-dessus, **pas** par `AfficherGrilleSkill`. Elles sont découplées de la grille pour permettre une utilisation indépendante :
+**Fonctions post-grille :** Ces 4 fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-10 ci-dessus, **pas** par `AfficherGrilleSkill`. Elles sont découplées de la grille pour permettre une utilisation indépendante :
 1. `compilation_metriques(resultats)` — Compile les métriques du knowledge
 2. `compilation_temps(resultats)` — Compile les données de temps
-3. `sauvegarde(resultats)` — Sauvegarde les résultats
+3. `confirmation_documentation(resultats)` — **Règle de conformité** : vérifie si des changements ont été détectés par les compilations et rappelle à l'utilisateur de documenter avant la sauvegarde. Utilise AskUserQuestion pour demander confirmation. L'utilisateur peut passer mais reçoit un rappel.
+4. `sauvegarde(resultats)` — Sauvegarde les résultats
 
-Ces fonctions sont **toujours** exécutées après la grille, que le quiz soit complet ou non. L'appel se fait via `from knowledge_skills import compilation_metriques, compilation_temps, sauvegarde`.
+Ces fonctions sont **toujours** exécutées après la grille, que le quiz soit complet ou non. L'appel se fait via `from knowledge_skills import compilation_metriques, compilation_temps, confirmation_documentation, sauvegarde`.
 
 ### Important
 

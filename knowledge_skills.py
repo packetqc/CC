@@ -260,6 +260,18 @@ def compilation_temps(resultats):
     pass
 
 
+def confirmation_documentation(resultats):
+    """Vérifie si des changements ont été détectés et rappelle à l'utilisateur de documenter.
+
+    Règle de conformité : si les compilations (métriques/temps) révèlent des changements,
+    demander confirmation à l'utilisateur avant la sauvegarde.
+    L'utilisateur peut passer, mais reçoit un rappel que la documentation est importante.
+
+    Retourne True si l'utilisateur confirme, False s'il passe.
+    """
+    pass
+
+
 def sauvegarde(resultats):
     """Sauvegarde les résultats du knowledge. Appelée après l'affichage de la grille."""
     pass
