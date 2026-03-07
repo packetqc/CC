@@ -1,0 +1,10 @@
+{
+  "en_cours": true,
+  "niveau": "principal",
+  "quiz_actif": null,
+  "resultats": {
+    "Quiz A": {"A1": "--", "A2": "--", "A3": "--"},
+    "Quiz B": {"B1": "--", "B2": "--", "B3": "--"},
+    "Quiz C": {"C1": "--", "C2": "--", "C3": "--"}
+  }
+}
