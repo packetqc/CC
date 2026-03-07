@@ -34,6 +34,7 @@ Le format est construit dynamiquement à partir de `knowledge_config/methodologi
   "page_principal": 0,
   "page_secondaire": 0,
   "demande_executee": false,
+  "demande_reformulee": null,
   "resultats": {
     "Knowledge A": {"A1": "--", "A2": "--", "A3": "--"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
@@ -130,6 +131,12 @@ Pour chaque knowledge, afficher avec AskUserQuestion :
 - Les options restent TOUJOURS visibles
 - Boucler jusqu'à ce que l'utilisateur choisisse **Passer**
 
+**Retour après reformulation :**
+Si on entre dans le Knowledge Secondaire et que `demande_reformulee` est non `null` dans `knowledge_resultats.json`, cela signifie que l'utilisateur a reformulé sa demande après un échec. Dans ce cas :
+- Afficher le message : "Vos réponses précédentes sont conservées. Vous pouvez les raffiner avant de procéder à l'exécution."
+- Les questions déjà répondues restent accessibles pour raffinement optionnel
+- Les prérequis de `executer_demande` sont déjà satisfaits (les réponses précédentes comptent)
+
 ### Niveau 3 : Sous-knowledge
 
 Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` :
@@ -140,7 +147,7 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` 
   - Retourner au Knowledge Secondaire sans exécuter
 - Ne PAS afficher de choix Vrai/Faux/Passer à l'utilisateur
 - Cette option est entièrement programmatique et non modifiable par l'humain dans le fichier de configuration
-- Capturer le message initial de l'utilisateur au démarrage de la session (la première demande qu'il a tapée)
+- **Déterminer la demande à exécuter** : lire `demande_reformulee` dans `knowledge_resultats.json`. Si non `null`, utiliser cette valeur. Sinon, utiliser le message initial de l'utilisateur au démarrage de la session.
 - **Collecter le contexte** : lire dans `knowledge_resultats.json` les réponses de TOUTES les questions qui précèdent dans ce knowledge. Par exemple, si on exécute A3, collecter les réponses de A1 et A2. Construire un objet JSON : `{"A1": "Vrai", "A2": "Faux"}`. Ce contexte sera transmis au programme via `--context`.
 
 **Checkpoint — Vérification pré-exécution (survie à la compaction) :**
@@ -175,6 +182,7 @@ python3 executer_demande.py --status
      - Supprimer le stash : `git stash drop`
      - Nettoyer : `rm -f .claude/journal_actions.json .claude/preuve_execution.json .claude/checkpoint_execution.json`
      - Enregistrer "Vrai" pour cette question
+     - Effacer `demande_reformulee` (remettre à `null` dans `knowledge_resultats.json`)
    - **Faux** (pas de preuve après 2 tentatives OU `code_retour` != 0) :
      - D'abord, exécuter le rollback des actions externes via `python3 executer_demande.py --rollback` (nettoie aussi le checkpoint)
      - Ensuite, restaurer les fichiers : `git checkout . && git clean -fd`
@@ -192,13 +200,20 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
      - `Reformuler` (description: "Tapez votre nouvelle demande via le champ texte 'Other'")
      - `Continuer sans reformuler` (description: "Conserver le résultat Faux et retourner au quiz")
 2. Si l'utilisateur choisit **"Other"** (champ texte libre) : c'est sa nouvelle demande reformulée
-   - Utiliser le texte saisi comme nouvelle demande
-   - Relancer l'exécution complète (checkpoint, rollback, skill commande-utilisateur) avec cette nouvelle demande
-   - Si **Vrai** : enregistrer Vrai, mettre `demande_executee` à `true`
-   - Si **Faux** : reproposer la reformulation (boucle)
+   - Sauvegarder le texte saisi comme `demande_reformulee` dans `knowledge_resultats.json`
+   - **Retourner au Knowledge Secondaire** (pas directement à l'exécution)
+   - Afficher le message : "Vos réponses précédentes sont conservées. Vous pouvez les raffiner avant de procéder à l'exécution."
+   - Les questions déjà répondues (ex: A1, A2) restent accessibles pour raffinement mais ne bloquent PAS l'accès à "Exécuter la demande" (les prérequis sont déjà satisfaits)
+   - Quand l'utilisateur choisit "Exécuter la demande" (A3), utiliser la `demande_reformulee` au lieu de la demande initiale
 3. Si l'utilisateur choisit **"Reformuler"** : lui redemander via AskUserQuestion avec un champ texte
 4. Si l'utilisateur choisit **"Continuer sans reformuler"** : conserver Faux, retourner au Knowledge Secondaire
 - Retourner automatiquement au Knowledge Secondaire
+
+**Gestion de la demande reformulée :**
+- Le champ `demande_reformulee` dans `knowledge_resultats.json` contient la dernière reformulation (ou `null` si pas de reformulation)
+- Lors de l'exécution (A3), la priorité est : `demande_reformulee` > demande initiale de session
+- Après une exécution **Vrai**, effacer `demande_reformulee` (remettre à `null`)
+- Après une nouvelle reformulation, écraser la valeur précédente
 
 **Pour toutes les autres actions (fonction, programme) :**
 - Afficher avec AskUserQuestion :
