@@ -7,6 +7,40 @@ description: Quiz de validation des travaux. Se lance automatiquement au démarr
 
 Tu dois exécuter ce quiz en utilisant l'outil AskUserQuestion. Le quiz a 3 niveaux. Tu dois suivre cette logique exactement.
 
+### Persistance des résultats (survie au compactage)
+
+Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_resultats.json` après CHAQUE réponse de l'utilisateur. Cela garantit que les résultats survivent au compactage de session.
+
+**Format du fichier `.claude/quiz_resultats.json` :**
+```json
+{
+  "en_cours": true,
+  "niveau": "principal",
+  "quiz_actif": null,
+  "resultats": {
+    "Quiz A": {"A1": "--", "A2": "--", "A3": "--"},
+    "Quiz B": {"B1": "--", "B2": "--", "B3": "--"},
+    "Quiz C": {"C1": "--", "C2": "--", "C3": "--"}
+  }
+}
+```
+
+**Au démarrage du skill :**
+1. Lire `.claude/quiz_resultats.json` avec l'outil Read
+2. Si le fichier existe et `en_cours` est `true` : reprendre le quiz au niveau indiqué
+3. Si le fichier n'existe pas : créer le fichier avec les valeurs par défaut et démarrer le quiz
+4. Si `en_cours` est `false` : le quiz est déjà terminé, ne pas relancer
+
+**Après CHAQUE réponse de l'utilisateur :**
+1. Mettre à jour les résultats dans le JSON
+2. Mettre à jour `niveau` ("principal", "secondaire", "sous_quiz") et `quiz_actif` (la lettre en cours)
+3. Sauvegarder le fichier avec l'outil Write
+
+**Quand l'utilisateur choisit Terminer :**
+1. Mettre `en_cours` à `false`
+2. Sauvegarder le fichier
+3. Afficher la grille de résultats
+
 ### Configuration des actions
 
 Quand l'utilisateur répond **Vrai**, exécuter l'action associée à la question :
@@ -79,3 +113,4 @@ Remplacer [val] par la réponse (Vrai, Faux, Passer) ou `--` si non répondu. Ce
 
 - Si l'utilisateur sélectionne "No preference" ou "Other" dans AskUserQuestion, traiter comme l'option **Passer** du niveau actuel ou **Terminer** au niveau principal.
 - Toujours montrer le message de la fonction/programme quand Vrai est sélectionné AVANT de retourner au niveau supérieur.
+- **CRITIQUE** : Après un compactage de session, TOUJOURS lire `.claude/quiz_resultats.json` pour retrouver l'état du quiz avant de continuer.
