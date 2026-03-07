@@ -50,6 +50,7 @@ Le format est construit dynamiquement à partir de `knowledge_config/methodology
   "page_secondaire": 0,
   "demande_executee": false,
   "demande_reformulee": null,
+  "issue_github": null,
   "valeurs_detectees": {},
   "resultats": {
     "Knowledge A": {"A1": "--", "A2": "--", "A3": "--"},
@@ -261,6 +262,36 @@ python3 executer_demande.py --status
 - **Si checkpoint existe avec `phase: "pre_execution"`** : le programme n'a pas encore démarré → continuer normalement (étape 1)
 - **Si pas de checkpoint** : première exécution → continuer normalement (étape 1)
 
+**Condition incontournable — Issue GitHub requise avant exécution :**
+Avant toute exécution, vérifier qu'un issue GitHub a été créé pour cette demande. Cette condition est **bloquante** : sans issue, l'exécution ne peut PAS démarrer.
+
+1. Vérifier si un issue existe déjà pour cette session :
+   - Lire `knowledge_resultats.json` → champ `issue_github` (objet avec `numero`, `repo`, `url`)
+   - **Si `issue_github` existe et contient un `numero`** : l'issue a déjà été créé → passer à l'exécution
+   - **Si `issue_github` est `null` ou absent** : créer l'issue (étape 2)
+
+2. Créer l'issue GitHub :
+   a. Déterminer le repo cible : utiliser la valeur confirmée de A3 (projet). Si le projet est le repo courant, utiliser le repo courant. Sinon, utiliser `-R <owner>/<repo>`.
+   b. Construire le titre : utiliser la valeur confirmée de A1 (titre)
+   c. Construire le body : utiliser la valeur confirmée de A2 (description)
+   d. Créer l'issue via Bash :
+      ```
+      gh issue create --title "<titre_A1>" --body "<description_A2>" [-R <repo>]
+      ```
+   e. Capturer le numéro et l'URL de l'issue créé depuis la sortie de la commande
+   f. Sauvegarder dans `knowledge_resultats.json` :
+      ```json
+      "issue_github": {
+        "numero": <numero>,
+        "repo": "<repo>",
+        "url": "<url>"
+      }
+      ```
+   g. Committer : `git add .claude/knowledge_resultats.json && git commit -m "knowledge: issue GitHub #<numero> créé"`
+   h. Pousser : `git push -u origin <branche-courante>`
+
+3. **Si la création échoue** (erreur `gh`, pas de repo, pas d'accès) : l'exécution est **bloquée**. Enregistrer "Faux" pour A4 et retourner au Knowledge Principal avec un message d'erreur expliquant que l'issue n'a pas pu être créé.
+
 **Exécution inline (NE PAS utiliser l'outil Skill) :**
 L'exécution se fait **directement dans le flow du knowledge-validation** sans appeler de sous-skill. Cela évite les frontières de tour qui interrompent le flow. Toutes les étapes ci-dessous s'enchaînent dans le MÊME tour de réponse.
 
@@ -302,6 +333,7 @@ L'exécution se fait **directement dans le flow du knowledge-validation** sans a
      - Restaurer les fichiers : `git checkout . && git clean -fd`
      - Restaurer le stash : `git stash pop`
      - Nettoyer : `rm -f .claude/preuve_execution.json`
+     - Fermer l'issue GitHub si elle a été créée : si `issue_github` contient un `numero`, exécuter `gh issue close <numero> [-R <repo>]`, puis remettre `issue_github` à `null` dans `knowledge_resultats.json`
      - Enregistrer "Faux" pour cette question
      - Sauvegarder résultats → proposer la reformulation (voir ci-dessous)
 
