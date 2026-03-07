@@ -1,7 +1,7 @@
 {
   "en_cours": true,
-  "niveau": "principal",
-  "knowledge_actif": null,
+  "niveau": "secondaire",
+  "knowledge_actif": "A",
   "page_principal": 0,
   "page_secondaire": 0,
   "demande_executee": true,
