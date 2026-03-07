@@ -81,14 +81,16 @@ Quand l'utilisateur répond **Passer**, enregistrer "Passer" sans action.
 
 AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illimité d'éléments dans `methodologie.md`, un système de pagination est utilisé aux niveaux principal et secondaire.
 
-**Règle de pagination :**
+**Règle de pagination (identique aux deux niveaux) :**
 - Calculer le nombre total d'éléments (knowledge ou questions) depuis `methodologie.md`
-- **Niveau principal** : `Terminer` est toujours présent comme dernière option
-  - Si total ≤ 3 : afficher tous les éléments + `Terminer` (pas de pagination)
-  - Si total > 3 : pages de 3 éléments + `Suivant ▸` (pas de `Terminer` sur les pages intermédiaires, `Terminer` remplace `Suivant ▸` sur la dernière page)
-- **Niveau secondaire** : PAS d'option `Passer` (le bouton Skip/Other de l'interface remplit ce rôle — traité comme retour au Knowledge Principal)
-  - Si total ≤ 4 : afficher toutes les questions (pas de pagination)
-  - Si total > 4 : pages de 3 éléments + `Suivant ▸` (dernière page : éléments restants sans `Suivant ▸`)
+- Chaque niveau a une option de contrôle fixe en dernière position :
+  - **Niveau principal** : `Terminer` (toujours en dernière position)
+  - **Niveau secondaire** : `Passer` (toujours en dernière position)
+- Si total ≤ 2 : afficher tous les éléments + option de contrôle (2 ou 3 options, pas de pagination)
+- Si total = 3 : afficher les 3 éléments + option de contrôle (4 options, pas de pagination)
+- Si total > 3 : pagination nécessaire
+  - **Page intermédiaire** : 2 éléments + `Suivant ▸` + option de contrôle (4 options)
+  - **Dernière page** : éléments restants (1 à 3) + option de contrôle (2 à 4 options, pas de `Suivant ▸`)
 - Maintenir un index de page courant dans `.claude/knowledge_resultats.json` : champs `page_principal` et `page_secondaire` (défaut: 0)
 
 **Persistance de la page :** Après chaque navigation de page, sauvegarder l'index dans le JSON et committer/pousser comme pour toute autre mise à jour.
@@ -110,13 +112,13 @@ Afficher avec AskUserQuestion (multiSelect: false) :
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
 - Lire toutes les questions du knowledge depuis `methodologie.md`
-- Appliquer la pagination (voir règle ci-dessus) — PAS d'option `Passer`
+- Appliquer la pagination (voir règle ci-dessus) avec `Passer` comme option de contrôle
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
 - Pour les questions de type `executer_demande`, afficher le label "Exécuter la demande" au lieu de l'identifiant de la question
 - Chaque question lance le Sous-knowledge correspondant
-- Si l'utilisateur choisit **Skip** ou **Other** : traiter comme retour au Knowledge Principal (remet `page_secondaire` à 0)
+- **Passer** retourne au Knowledge Principal (et remet `page_secondaire` à 0)
 - Les options restent TOUJOURS visibles
-- Boucler jusqu'à ce que l'utilisateur choisisse Skip/Other
+- Boucler jusqu'à ce que l'utilisateur choisisse **Passer**
 
 ### Niveau 3 : Sous-knowledge
 
