@@ -6,7 +6,13 @@
   "page_secondaire": 0,
   "demande_executee": false,
   "demande_reformulee": null,
-  "issue_github": null,
+  "issue_github": {
+    "numero": 17,
+    "repo": "packetqc/CC",
+    "url": "https://github.com/packetqc/CC/issues/17",
+    "node_id": "I_kwDORa8LA87wxwnn",
+    "local_only": false
+  },
   "valeurs_detectees": {
     "A1": {"valeur": "le_titre", "original": null},
     "A2": {"valeur": "la_description", "original": null},
