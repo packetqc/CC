@@ -5,9 +5,7 @@ import sys
 
 def main():
     nom = sys.argv[1] if len(sys.argv) > 1 else "inconnu"
-    print(f"      >>> Je suis le PROGRAMME EXTERNE qui a été appelé pour '{nom}'.")
-    print(f"      >>> Traitement en cours pour {nom}...")
-    print(f"      >>> Traitement terminé. Retour au quiz.")
+    print(f"      >>> Je suis le programme {nom}.")
 
 
 if __name__ == "__main__":

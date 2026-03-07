@@ -16,9 +16,7 @@ def lire_choix(prompt, max_choix):
 
 def fonction_verification(nom):
     """Fonction interne simulée."""
-    print(f"      >>> Je suis la FONCTION INTERNE qui a été appelée pour '{nom}'.")
-    print(f"      >>> Vérification en cours pour {nom}...")
-    print(f"      >>> Vérification terminée. Retour au quiz.")
+    print(f"      >>> Je suis la fonction {nom}.")
 
 
 def appeler_programme_externe(nom):
