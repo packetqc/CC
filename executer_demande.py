@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Routeur de demandes utilisateur.
+"""Exécuteur de demandes utilisateur.
 
-Analyse la chaîne de l'utilisateur, cherche des mots-clés correspondant
-à une route dans .claude/routes.json, et exécute le programme associé.
+Deux modes d'utilisation :
 
-- Si un mot-clé est trouvé → exécute le programme → retourne son code
-- Si aucun mot-clé ne correspond → Faux immédiatement (demande non reconnue)
+1. --route <id> : exécute directement le programme associé à la route
+   (la classification d'intention est faite par Claude dans le skill)
+2. --list-routes : affiche les routes disponibles (pour que Claude puisse classifier)
+3. --rollback : annule les actions du journal
 
 Maintient un journal d'actions dans .claude/journal_actions.json
 pour permettre le rollback en cas d'échec.
 
 Usage:
-  python3 executer_demande.py "demande de l'utilisateur"
+  python3 executer_demande.py --route build
+  python3 executer_demande.py --list-routes
   python3 executer_demande.py --rollback
 """
 import json
@@ -117,54 +119,39 @@ def charger_routes():
         return json.load(f)
 
 
-def trouver_route(demande, routes):
-    """Cherche une route dont un mot-clé correspond à la demande.
+def lister_routes():
+    """Affiche les routes disponibles pour la classification IA."""
+    config = charger_routes()
+    if config is None:
+        sys.exit(1)
 
-    Retourne la première route trouvée, ou None.
-    """
-    demande_lower = demande.lower()
-    for route in routes.get("routes", []):
-        for mot_cle in route.get("mots_cles", []):
-            if mot_cle.lower() in demande_lower:
-                return route
+    routes = config.get("routes", [])
+    if not routes:
+        print("Aucune route configurée.")
+        sys.exit(1)
+
+    for route in routes:
+        route_id = route.get("id", "?")
+        description = route.get("description", "")
+        mots_cles = ", ".join(route.get("mots_cles", []))
+        print(f"[{route_id}] {description} (indices: {mots_cles})")
+
+
+def trouver_route_par_id(route_id, config):
+    """Trouve une route par son identifiant."""
+    for route in config.get("routes", []):
+        if route.get("id") == route_id:
+            return route
     return None
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("Faux — aucune demande fournie.")
-        sys.exit(1)
-
-    # Mode rollback
-    if sys.argv[1] == "--rollback":
-        rollback()
-        sys.exit(0)
-
-    demande = sys.argv[1]
-    if not demande.strip():
-        print("Faux — demande vide.")
-        sys.exit(1)
-
-    # Charger les routes
-    config_routes = charger_routes()
-    if config_routes is None:
-        sys.exit(1)
-
-    # Chercher une route correspondante
-    route = trouver_route(demande, config_routes)
-
-    if route is None:
-        print(f"Faux — aucun programme ne correspond à cette demande.")
-        print(f"Demande reçue : \"{demande}\"")
-        print("Aucun mot-clé reconnu dans la table de routage.")
-        sys.exit(1)
-
-    # Route trouvée — exécuter le programme associé
+def executer_route(route):
+    """Exécute le programme associé à une route."""
     programme = route["programme"]
     route_id = route.get("id", "inconnu")
     description = route.get("description", "")
 
-    print(f"Route trouvée : [{route_id}] {description}")
+    print(f"Route : [{route_id}] {description}")
     print(f"Programme : {programme}")
 
     # Initialiser le journal
@@ -174,7 +161,6 @@ def main():
     enregistrer_action(journal, "commande_exec", {
         "route_id": route_id,
         "commande": programme,
-        "demande_originale": demande,
         "rollback_cmd": None,
     })
 
@@ -207,6 +193,51 @@ def main():
 
     except OSError as e:
         print(f"Faux — impossible de lancer le processus : {e}")
+        sys.exit(1)
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Faux — aucun argument fourni.")
+        print("Usage: --route <id> | --list-routes | --rollback")
+        sys.exit(1)
+
+    arg = sys.argv[1]
+
+    # Mode rollback
+    if arg == "--rollback":
+        rollback()
+        sys.exit(0)
+
+    # Mode liste des routes
+    if arg == "--list-routes":
+        lister_routes()
+        sys.exit(0)
+
+    # Mode exécution par route ID
+    if arg == "--route":
+        if len(sys.argv) < 3:
+            print("Faux — identifiant de route manquant.")
+            print("Usage: python3 executer_demande.py --route <id>")
+            sys.exit(1)
+
+        route_id = sys.argv[2]
+        config = charger_routes()
+        if config is None:
+            sys.exit(1)
+
+        route = trouver_route_par_id(route_id, config)
+        if route is None:
+            print(f"Faux — route '{route_id}' introuvable.")
+            print("Routes disponibles :")
+            lister_routes()
+            sys.exit(1)
+
+        executer_route(route)
+
+    else:
+        print(f"Faux — argument inconnu : {arg}")
+        print("Usage: --route <id> | --list-routes | --rollback")
         sys.exit(1)
 
 

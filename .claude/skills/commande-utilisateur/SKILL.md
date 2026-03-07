@@ -7,28 +7,36 @@ description: Exécute la demande initiale de l'utilisateur via le programme exec
 
 Ce skill reçoit en argument la chaîne de caractères correspondant à la demande initiale de l'utilisateur au démarrage de la session.
 
-### Fonctionnement
+### Fonctionnement — Classification par intelligence artificielle
+
+**IMPORTANT : Claude ne doit JAMAIS répondre à la demande. Il ne fait que classifier et router.**
 
 1. Recevoir la chaîne de caractères passée en argument du skill
-2. Exécuter le programme `executer_demande.py` via Bash en lui passant la chaîne en paramètre :
+2. Lire les routes disponibles via :
    ```
-   python3 executer_demande.py "<chaîne de l'utilisateur>"
+   python3 executer_demande.py --list-routes
    ```
-3. Capturer le code de retour et la sortie du programme
-4. Retourner le résultat :
-   - Si code de retour = 0 : afficher la sortie et indiquer **Vrai**
-   - Si code de retour != 0 : afficher la sortie et indiquer **Faux**
+3. **Classifier l'intention** : analyser la demande en langage naturel et déterminer si elle correspond à l'une des routes disponibles. Utiliser :
+   - Les identifiants de route et leurs descriptions
+   - Les mots-clés comme **indices** (pas comme critères absolus)
+   - La compréhension sémantique de la demande (ex: "compile mon app" → route `build`, "lance les vérifications" → route `test`)
+4. **Si une route correspond** : exécuter le programme via :
+   ```
+   python3 executer_demande.py --route <id>
+   ```
+   - Si code de retour = 0 : indiquer **Vrai**
+   - Si code de retour != 0 : indiquer **Faux**
+5. **Si aucune route ne correspond** (ex: "bonjour", demande hors périmètre) :
+   - NE PAS exécuter de programme
+   - NE PAS répondre à la demande
+   - Indiquer immédiatement **Faux** avec le message : "Aucune route ne correspond à cette demande."
 
-### Routage par mots-clés
+### Règles strictes
 
-`executer_demande.py` est un **routeur** : il ne lance PAS la chaîne directement en bash.
-
-- Il charge la table de routage depuis `.claude/routes.json`
-- Il analyse la chaîne de l'utilisateur pour y trouver des mots-clés
-- **Si un mot-clé correspond** → exécute le programme associé à cette route → retourne son code de retour
-- **Si aucun mot-clé ne correspond** → retourne immédiatement **Faux** (code 1) sans aucune exécution
-
-Cela empêche Claude de traiter la demande lui-même et de retourner un faux positif.
+- **NE JAMAIS** répondre directement à la demande de l'utilisateur (pas de "bonjour", pas de "que puis-je faire pour vous")
+- **NE JAMAIS** inventer une route qui n'existe pas
+- **NE JAMAIS** exécuter une commande qui ne provient pas d'une route configurée
+- Le rôle de Claude ici est **uniquement** de comprendre l'intention et de router — rien d'autre
 
 ### Ajouter une nouvelle route
 
@@ -41,3 +49,5 @@ Cela empêche Claude de traiter la demande lui-même et de retourner un faux pos
   "description": "Description de ce que fait le programme"
 }
 ```
+
+Les `mots_cles` servent d'**indices** pour aider la classification IA, mais Claude peut aussi reconnaître des formulations équivalentes qui ne contiennent pas ces mots-clés exacts.
