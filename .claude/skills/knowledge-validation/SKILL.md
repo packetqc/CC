@@ -169,6 +169,13 @@ Le message initial (ou `demande_reformulee` si non null) est structuré ainsi :
 **Extraction des valeurs :**
 - **A1 (titre)** : extraire le titre depuis la ligne 1 de la commande (ex: dans `project create Mon Super Projet` → titre = `"Mon Super Projet"`)
 - **A2 (description)** : extraire tout le texte après la ligne 1 (hors bloc JSON). C'est la description brute de l'utilisateur. Claude doit aussi produire une **version synthétisée** (résumé concis de la description)
+- **A3 (projet)** : détecter le projet GitHub associé à la demande. Stratégie de détection en cascade :
+  1. **Chercher dans la demande** : analyser le titre (A1) et la description (A2) pour un nom de repo GitHub explicite (ex: `project create MPLIB`, `issue dans CC`, `pour le projet test-project-5`)
+  2. **Chercher dans le contexte local** : vérifier le repo Git courant via `git remote get-url origin` pour extraire le nom du repo (ex: `packetqc/CC` → `CC`)
+  3. **Chercher sur GitHub** : si pas trouvé, utiliser `gh repo list --json name,description --limit 30` pour lister les repos disponibles et trouver le meilleur match sémantique avec la demande
+  4. **Si aucun match** : mettre `null` — l'utilisateur devra spécifier via le champ texte (Other) au niveau 3
+  - La valeur stockée est le nom du repo (ex: `"CC"`, `"MPLIB"`, `"test-project-5"`)
+  - **Important** : `gh` CLI utilise la variable d'environnement `GH_TOKEN` déjà présente pour l'authentification. Ne pas demander de token à l'utilisateur.
 - **Autres questions** : détecter selon le champ `choix` comme indice sémantique et le contexte du projet
 
 **Format de stockage dans `valeurs_detectees` de `knowledge_resultats.json` :**
@@ -176,7 +183,7 @@ Le message initial (ou `demande_reformulee` si non null) est structuré ainsi :
 "valeurs_detectees": {
   "A1": {"valeur": "Mon Super Projet", "original": null},
   "A2": {"valeur": "Synthèse concise de la description", "original": "Le texte complet de la description fournie par l'utilisateur sur plusieurs lignes..."},
-  "A3": {"valeur": "nom-projet", "original": null}
+  "A3": {"valeur": "CC", "original": null}
 }
 ```
 - `valeur` : la valeur synthétisée/nettoyée par Claude — c'est ce qui sera utilisé par le système en aval
@@ -237,7 +244,7 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodology-knowl
 - **Déterminer la demande à exécuter** : lire `demande_reformulee` dans `knowledge_resultats.json`. Si non `null`, utiliser cette valeur. Sinon, utiliser le message initial de l'utilisateur au démarrage de la session.
 - **Collecter le contexte** : lire dans `knowledge_resultats.json` les réponses ET les valeurs détectées de TOUTES les questions qui précèdent dans ce knowledge. Pour chaque question précédente, inclure le résultat (Vrai/Faux/Passer) et la valeur confirmée/corrigée (champ `valeur` de `valeurs_detectees`). Construire un objet JSON enrichi :
   ```json
-  {"A1": {"resultat": "Vrai", "valeur": "Mon Super Projet"}, "A2": {"resultat": "Vrai", "valeur": "Application de gestion de tâches avec interface web"}, "A3": {"resultat": "Vrai", "valeur": "nom-projet"}}
+  {"A1": {"resultat": "Vrai", "valeur": "Mon Super Projet"}, "A2": {"resultat": "Vrai", "valeur": "Application de gestion de tâches avec interface web"}, "A3": {"resultat": "Vrai", "valeur": "CC"}}
   ```
   Note : c'est la `valeur` (synthèse confirmée) qui est transmise, pas l'`original`. C'est ce que l'utilisateur a validé ou corrigé au niveau 3.
   Ce contexte sera transmis au programme via `--context`.
@@ -362,8 +369,14 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
       Texte original: Je veux créer une application qui permet de gérer des tâches, avec une interface web moderne, des notifications, et un système de priorités...
       ```
       L'utilisateur voit la synthèse de Claude ET son texte original, et peut juger si la synthèse est fidèle. Ce qui sera utilisé en aval par le système, c'est la `valeur` (la synthèse), pas l'original.
-    - **Si `original` est null** (ex: A1 titre — valeur déjà concise) :
+    - **Si `original` est null** (ex: A1 titre, A3 projet — valeur déjà concise) :
       Question simple : `"Confirmez: <valeur>"` (ex: `"Confirmez: Mon Super Projet"`)
+      - **Cas spécial A3 (projet)** : enrichir la description de l'option avec les infos du repo GitHub. Utiliser `gh repo view <owner>/<repo> --json name,description,url` pour obtenir la description et l'URL. Afficher :
+        ```
+        Confirmez le projet: CC (Claude Code AI)
+        https://github.com/packetqc/CC
+        ```
+        Si le projet n'est pas détecté, l'utilisateur peut taper le nom du repo dans le champ Other. Claude vérifiera alors avec `gh repo view` que le repo existe avant de confirmer.
     - **Si `valeur` est null** : `"Confirmez: (non détecté)"`
   - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodology-knowledge.md` (Vrai, Faux, Passer)
     - **Vrai** : confirme la synthèse. Enregistrer "Vrai", conserver `valeurs_detectees`, afficher le message associé, retourner au Knowledge Secondaire
