@@ -1,7 +1,7 @@
 {
   "en_cours": true,
-  "niveau": "principal",
-  "knowledge_actif": null,
+  "niveau": "secondaire",
+  "knowledge_actif": "B",
   "resultats": {
     "Knowledge A": {"A1": "--", "A2": "--", "A3": "--"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
