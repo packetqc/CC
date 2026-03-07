@@ -54,13 +54,14 @@ def quiz_secondaire(nom, lettre):
 
 def afficher_grille(options, resultats_par_quiz):
     """Affiche les résultats sous forme de tableau inversé (quiz en colonnes)."""
+    idx = 5
     col = 10
-    sep = "+" + "-" * col + ("+" + "-" * col) * len(options) + "+"
-    sep_header = "+" + "=" * col + ("+" + "=" * col) * len(options) + "+"
+    sep = "+" + "-" * idx + ("+" + "-" * col) * len(options) + "+"
+    sep_header = "+" + "=" * idx + ("+" + "=" * col) * len(options) + "+"
 
     print("\n        GRILLE DE RÉSULTATS")
     print(sep)
-    header = f"|{'':^{col}}"
+    header = f"|{'':^{idx}}"
     for nom, _ in options:
         header += f"|{nom:^{col}}"
     header += "|"
@@ -68,7 +69,7 @@ def afficher_grille(options, resultats_par_quiz):
     print(sep_header)
 
     for n in range(1, 4):
-        row = f"|{f'   {n}':^{col}}"
+        row = f"|{n:^{idx}}"
         for nom, lettre in options:
             sous_option = f"{lettre}{n}"
             if nom in resultats_par_quiz and sous_option in resultats_par_quiz[nom]:
