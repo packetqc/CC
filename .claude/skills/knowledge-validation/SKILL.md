@@ -271,32 +271,38 @@ Avant l'exécution, tenter de créer un issue GitHub pour journaliser la demande
    - **Si `issue_github.local_only` est `true`** : données persistées sur disque d'une session précédente → tenter la synchronisation (étape 3), puis passer à l'exécution dans tous les cas
    - **Si `issue_github` est `null` ou absent** : créer l'issue (étape 2)
 
-2. Créer l'issue GitHub :
-   a. Déterminer le repo cible : utiliser la valeur confirmée de A3 (projet). Si le projet est le repo courant, utiliser le repo courant. Sinon, utiliser `-R <owner>/<repo>`.
+2. Créer l'issue GitHub via `scripts/gh_helper.py` :
+   a. Déterminer le repo cible : utiliser la valeur confirmée de A3 (projet) au format `owner/repo`. Si le projet est le repo courant, déduire `owner/repo` depuis l'URL du remote origin.
    b. Construire le titre : utiliser la valeur confirmée de A1 (titre)
    c. Construire le body : utiliser la valeur confirmée de A2 (description)
    d. Tenter la création via Bash :
       ```
-      gh issue create --title "<titre_A1>" --body "<description_A2>" [-R <repo>]
+      python3 -c "
+      from scripts.gh_helper import GitHubHelper
+      gh = GitHubHelper()
+      result = gh.issue_create(repo='<owner/repo>', title='<titre_A1>', body='<description_A2>', labels=['task'])
+      import json; print(json.dumps(result))
+      "
       ```
-   e. **Si la création réussit** : capturer le numéro et l'URL, sauvegarder dans `knowledge_resultats.json` :
+   e. **Si la création réussit** (`created: true` dans le résultat) : sauvegarder dans `knowledge_resultats.json` :
       ```json
       "issue_github": {
         "numero": <numero>,
-        "repo": "<repo>",
-        "url": "<url>",
+        "repo": "<owner/repo>",
+        "url": "<html_url>",
+        "node_id": "<node_id>",
         "local_only": false
       }
       ```
       Committer : `git add .claude/knowledge_resultats.json && git commit -m "knowledge: issue GitHub #<numero> créé"`
       Pousser : `git push -u origin <branche-courante>`
       → Passer à l'exécution.
-   f. **Si la création échoue** (erreur `gh`, pas de token, réseau indisponible) : → **Fallback sur disque** (étape 4), puis passer à l'exécution quand même.
+   f. **Si la création échoue** (erreur réseau, token invalide, etc.) : → **Fallback sur disque** (étape 4), puis passer à l'exécution quand même.
 
 3. **Synchronisation d'un issue local vers GitHub** (reprise après fallback) :
    - Lire les données persistées dans `issue_github` (titre, body, repo)
-   - Tenter `gh issue create --title "<titre>" --body "<body>" [-R <repo>]`
-   - **Si réussite** : mettre à jour `issue_github` avec `numero`, `url`, et `local_only: false`. Committer et pousser.
+   - Tenter la création via `gh.issue_create(repo, title, body, labels=['task'])`
+   - **Si réussite** : mettre à jour `issue_github` avec `numero`, `url`, `node_id`, et `local_only: false`. Committer et pousser.
    - **Si échec** : GitHub toujours indisponible. Les données restent persistées sur disque pour la prochaine session. L'exécution continue normalement.
 
 4. **Fallback sur disque** (GitHub indisponible) :
@@ -359,7 +365,7 @@ L'exécution se fait **directement dans le flow du knowledge-validation** sans a
      - Restaurer les fichiers : `git checkout . && git clean -fd`
      - Restaurer le stash : `git stash pop`
      - Nettoyer : `rm -f .claude/preuve_execution.json`
-     - **Ne PAS fermer l'issue GitHub** — l'issue reste ouverte pour journaliser le déroulement. Si `issue_github.numero` existe, poster un commentaire indiquant l'échec d'exécution : `gh issue comment <numero> --body "Exécution échouée — rollback effectué. Reformulation en cours." [-R <repo>]`
+     - **Ne PAS fermer l'issue GitHub** — l'issue reste ouverte pour journaliser le déroulement. Si `issue_github.numero` existe, poster un commentaire d'échec via `gh.issue_comment_post(repo, numero, "Exécution échouée — rollback effectué. Reformulation en cours.")`
      - Enregistrer "Faux" pour cette question
      - Sauvegarder résultats → proposer la reformulation (voir ci-dessous)
 
@@ -499,9 +505,11 @@ Chaque knowledge a sa propre rangée d'en-têtes avec ses IDs, suivie de sa rang
 - **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
 
 **Publication de la grille sur l'issue GitHub :**
-Après l'affichage de la grille, si `issue_github.numero` existe (non null, synchronisé vers GitHub), poster un commentaire sur l'issue contenant la grille de résultats :
-```
-gh issue comment <numero> --body "<grille_markdown>" [-R <repo>]
+Après l'affichage de la grille, si `issue_github.numero` existe (non null, synchronisé vers GitHub), poster un commentaire sur l'issue via `scripts/gh_helper.py` :
+```python
+from scripts.gh_helper import GitHubHelper
+gh = GitHubHelper()
+gh.issue_comment_post(repo='<owner/repo>', issue_number=<numero>, body='<grille_markdown>')
 ```
 Le body du commentaire doit contenir :
 - La grille de résultats en format markdown (même contenu que celui affiché à l'utilisateur)
