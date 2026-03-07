@@ -105,10 +105,11 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 **Règle de pagination (identique aux deux niveaux) :**
 - Calculer le nombre total d'éléments (knowledge ou questions) depuis `methodology-knowledge.md`
 - Il n'y a plus d'option de contrôle fixe (Terminer/Passer) dans les choix — le bouton **Skip** natif de AskUserQuestion remplit ce rôle
-- Si total ≤ 4 : afficher tous les éléments (1 à 4 options, pas de pagination)
+- Si total = 1 : entrée automatique (pas de menu — voir mode initial du principal)
+- Si total ≤ 4 : afficher tous les éléments (2 à 4 options, pas de pagination)
 - Si total > 4 : pagination nécessaire
   - **Page intermédiaire** : 3 éléments + `Suivant ▸` (4 options)
-  - **Dernière page** : éléments restants (1 à 4 options, pas de `Suivant ▸`)
+  - **Dernière page** : éléments restants (2 à 4 options, pas de `Suivant ▸`)
 - Maintenir un index de page courant dans `.claude/knowledge_resultats.json` : champs `page_principal` et `page_secondaire` (défaut: 0)
 
 **Persistance de la page :** Après chaque navigation de page, sauvegarder l'index dans le JSON et committer/pousser comme pour toute autre mise à jour.
@@ -116,12 +117,10 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 ### Niveau 1 : Knowledge Principal
 
 **Mode initial (demande_executee = false) :**
-- Afficher avec AskUserQuestion (multiSelect: false) :
-  - header: "Principal"
-  - options: le 1er knowledge uniquement (1 option)
-- L'utilisateur doit d'abord entrer dans le 1er knowledge, où la 3e question (executer_demande) permet d'exécuter sa demande
+- **Entrée automatique** : puisqu'il n'y a qu'un seul knowledge disponible (le 1er), entrer directement dans le Knowledge Secondaire correspondant sans afficher de menu principal. AskUserQuestion exige minimum 2 options, et avec un seul élément sans option de contrôle, le menu serait impossible.
+- L'utilisateur doit d'abord passer par le 1er knowledge, où la 3e question (executer_demande) permet d'exécuter sa demande
 - Mettre `demande_executee` à `true` **UNIQUEMENT** quand l'exécution retourne **Vrai** (succès). Si Faux, `demande_executee` reste `false`.
-- **Skip** (bouton natif) affiche la grille de résultats et le knowledge est terminé
+- Quand l'utilisateur fait **Skip** au niveau secondaire en mode initial, traiter comme **Terminer** (afficher grille et finir) plutôt que retourner au principal (puisque le principal n'a qu'un seul élément)
 
 **Mode complet (demande_executee = true) :**
 - Afficher avec AskUserQuestion (multiSelect: false) :
@@ -304,6 +303,9 @@ Utiliser `message_fin` de `methodology-knowledge.md` comme message de fin après
 
 ### Important
 
-- Si l'utilisateur sélectionne "No preference", "Other" ou **Skip** dans AskUserQuestion : au niveau principal, traiter comme **Terminer** (afficher grille et finir) ; au niveau secondaire, traiter comme **retour au Knowledge Principal** (et remettre `page_secondaire` à 0).
+- Si l'utilisateur sélectionne "No preference", "Other" ou **Skip** dans AskUserQuestion :
+  - Au niveau principal : traiter comme **Terminer** (afficher grille et finir)
+  - Au niveau secondaire en mode initial (`demande_executee = false`) : traiter aussi comme **Terminer** (afficher grille et finir), car le principal n'a qu'un seul élément
+  - Au niveau secondaire en mode complet (`demande_executee = true`) : traiter comme **retour au Knowledge Principal** (et remettre `page_secondaire` à 0)
 - Toujours montrer le message de la fonction/programme quand Vrai est sélectionné AVANT de retourner au niveau supérieur.
 - **CRITIQUE** : Après un compactage de session, TOUJOURS lire `.claude/knowledge_resultats.json` pour retrouver l'état du knowledge avant de continuer.
