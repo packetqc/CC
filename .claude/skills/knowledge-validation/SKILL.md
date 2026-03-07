@@ -49,8 +49,12 @@ Pour construire les résultats par défaut : pour chaque knowledge dans `methodo
 2. Si le fichier existe et `en_cours` est `true` : reprendre le knowledge au niveau indiqué (survie au compactage)
 3. Si le fichier existe et `en_cours` est `false` : c'est un résidu d'une session précédente. Supprimer le fichier (`rm .claude/knowledge_resultats.json && git add .claude/knowledge_resultats.json && git commit -m "knowledge: nettoyage début de session" && git push -u origin <branche-courante>`), puis créer un nouveau fichier et démarrer le knowledge
 4. Si le fichier n'existe pas : créer le fichier avec les valeurs par défaut et démarrer le knowledge
-5. **Pré-remplissage (God Mode)** : Après l'étape 1-4, vérifier si le fichier `.claude/knowledge_prerempli.json` existe (via Read). Si oui :
-   a. Lire son contenu. Le format attendu est le même bloc `resultats` :
+5. **Pré-remplissage (God Mode)** : Après l'étape 1-4, chercher un bloc JSON de pré-remplissage dans cet ordre de priorité :
+   - **Source 1 — Message inline** : Analyser le message initial de l'utilisateur. Si le message contient un bloc JSON `{"resultats": {...}}` (sur une ligne séparée, après la demande), l'extraire. La demande est le texte AVANT le bloc JSON.
+   - **Source 2 — Fichier** : Si aucun JSON inline trouvé, vérifier si le fichier `.claude/knowledge_prerempli.json` existe (via Read).
+   - **Si aucune source trouvée** : pas de pré-remplissage, continuer normalement.
+
+   Le format attendu (identique pour les deux sources) :
       ```json
       {
         "resultats": {
@@ -60,10 +64,12 @@ Pour construire les résultats par défaut : pour chaque knowledge dans `methodo
       }
       ```
       Seules les clés présentes sont fusionnées. Les questions absentes restent à `"--"`.
-   b. Fusionner les valeurs dans `knowledge_resultats.json` : pour chaque knowledge et chaque question présente dans le fichier pré-rempli, remplacer la valeur `"--"` par la valeur fournie (Vrai, Faux, ou Passer)
-   c. Sauvegarder `knowledge_resultats.json` mis à jour
-   d. Supprimer le fichier pré-rempli : `rm -f .claude/knowledge_prerempli.json`
-   e. Committer : `git add .claude/knowledge_resultats.json && git rm -f --cached .claude/knowledge_prerempli.json 2>/dev/null; git commit -m "knowledge: pré-remplissage appliqué"`
+
+   **Appliquer le pré-remplissage :**
+   a. Fusionner les valeurs dans `knowledge_resultats.json` : pour chaque knowledge et chaque question présente dans le pré-rempli, remplacer la valeur `"--"` par la valeur fournie (Vrai, Faux, ou Passer)
+   b. Sauvegarder `knowledge_resultats.json` mis à jour
+   c. Si source fichier : supprimer le fichier pré-rempli `rm -f .claude/knowledge_prerempli.json`
+   d. Committer : `git add .claude/knowledge_resultats.json && git rm -f --cached .claude/knowledge_prerempli.json 2>/dev/null; git commit -m "knowledge: pré-remplissage appliqué"`
 
 **Après CHAQUE réponse de l'utilisateur (persistance sur branche de travail) :**
 1. Mettre à jour les résultats dans le JSON
