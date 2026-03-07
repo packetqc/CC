@@ -184,6 +184,20 @@ mark completed → update cache (G4) → post issue comment → next todo
 <content — actions taken, findings, decisions>
 ```
 
+**Bidirectional technique — post order matters**:
+
+- **User → Issue**: When the user writes a message, Claude captures it and posts it immediately to the issue as a 🧑 comment (verbatim).
+- **Claude → Issue BEFORE display**: When Claude prepares a significant response, it posts to the issue as a 🤖 comment **first**, then displays to the user. The order is critical: post first, display second. If reversed and compaction occurs before the post, the comment is lost forever.
+
+```
+User writes message
+    → Claude receives message
+    → Claude posts 🧑 comment on issue (verbatim)
+    → Claude works on response
+    → Claude posts 🤖 comment on issue (response)
+    → Claude displays response on screen
+```
+
 **Anti-pattern**: Posting comments retroactively at save time instead of in real-time. The issue trail must reflect WHEN things happened, not batch everything at the end.
 
 **Enforcement — `post_exchange()` one-liner** (v57):

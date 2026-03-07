@@ -10,6 +10,28 @@ Every session generates measurable output: PRs merged, files changed, publicatio
 
 ---
 
+## Incremental Compilation Principles
+
+Compile **at each task advancement**, not at session end. Three rules:
+
+1. **Incremental** — compile at each task advancement (not batched to end)
+2. **Anti-compaction** — commit compilation data regularly (progressive commits protect against context loss)
+3. **Append-only** — continue from where you left off, never rebuild from scratch (unless data integrity requires it)
+
+### Compilation Triggers
+
+| Trigger | Action | Commit? |
+|---------|--------|---------|
+| User task confirmed (Phase 1) | Add metrics row + time row for completed task | Yes — progressive commit |
+| 3+ tasks accumulated without compilation | Compile all pending rows | Yes — catch-up |
+| Before risky operation | Compile current state | Yes — insurance |
+| Session approaching compaction | Compile everything pending | Yes — anti-compaction |
+| Session end (`save`) | Final compilation pass + summary row | Yes — delivery |
+
+These principles apply equally to `time-compilation.md` — both sheets share the same triggers and rules.
+
+---
+
 ## Category Grid
 
 All metrics are organized by interaction category:
