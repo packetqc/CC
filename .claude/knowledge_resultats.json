@@ -3,7 +3,7 @@
   "niveau": "secondaire",
   "knowledge_actif": "A",
   "resultats": {
-    "Knowledge A": {"A1": "Vrai", "A2": "--", "A3": "--"},
+    "Knowledge A": {"A1": "Vrai", "A2": "Vrai", "A3": "--"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
     "Knowledge C": {"C1": "--", "C2": "--", "C3": "--"}
   }
