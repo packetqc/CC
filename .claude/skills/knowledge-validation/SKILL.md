@@ -103,7 +103,7 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
   - header: "Principal"
   - options: le 1er knowledge uniquement + `Terminer` (2 options)
 - L'utilisateur doit d'abord entrer dans le 1er knowledge, où la 3e question (executer_demande) permet d'exécuter sa demande
-- Une fois la 3e question du 1er knowledge exécutée au moins une fois, mettre `demande_executee` à `true`
+- Mettre `demande_executee` à `true` **UNIQUEMENT** quand l'exécution retourne **Vrai** (succès). Si Faux, `demande_executee` reste `false`.
 - **Terminer** affiche la grille de résultats et le knowledge est terminé
 
 **Mode complet (demande_executee = true) :**
@@ -181,6 +181,23 @@ python3 executer_demande.py --status
      - Enfin, restaurer le stash : `git stash pop`
      - Nettoyer : `rm -f .claude/preuve_execution.json`
      - Enregistrer "Faux" pour cette question
+     - **Proposer la reformulation** (voir ci-dessous)
+
+**Reformulation après échec :**
+Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Secondaire. À la place :
+1. Afficher avec AskUserQuestion :
+   - header: "Reformuler"
+   - question: "L'exécution a échoué. Souhaitez-vous reformuler votre demande ?"
+   - options:
+     - `Reformuler` (description: "Tapez votre nouvelle demande via le champ texte 'Other'")
+     - `Continuer sans reformuler` (description: "Conserver le résultat Faux et retourner au quiz")
+2. Si l'utilisateur choisit **"Other"** (champ texte libre) : c'est sa nouvelle demande reformulée
+   - Utiliser le texte saisi comme nouvelle demande
+   - Relancer l'exécution complète (checkpoint, rollback, skill commande-utilisateur) avec cette nouvelle demande
+   - Si **Vrai** : enregistrer Vrai, mettre `demande_executee` à `true`
+   - Si **Faux** : reproposer la reformulation (boucle)
+3. Si l'utilisateur choisit **"Reformuler"** : lui redemander via AskUserQuestion avec un champ texte
+4. Si l'utilisateur choisit **"Continuer sans reformuler"** : conserver Faux, retourner au Knowledge Secondaire
 - Retourner automatiquement au Knowledge Secondaire
 
 **Pour toutes les autres actions (fonction, programme) :**
