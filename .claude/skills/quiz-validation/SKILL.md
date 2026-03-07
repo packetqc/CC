@@ -35,11 +35,13 @@ Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_
 1. Mettre à jour les résultats dans le JSON
 2. Mettre à jour `niveau` ("principal", "secondaire", "sous_quiz") et `quiz_actif` (la lettre en cours)
 3. Sauvegarder le fichier avec l'outil Write
+4. Committer le fichier avec Bash : `git add .claude/quiz_resultats.json && git commit -m "quiz: mise à jour des résultats"`
 
 **Quand l'utilisateur choisit Terminer :**
 1. Mettre `en_cours` à `false`
 2. Sauvegarder le fichier
-3. Afficher la grille de résultats
+3. Committer le fichier avec Bash : `git add .claude/quiz_resultats.json && git commit -m "quiz: validation terminée"`
+4. Afficher la grille de résultats
 
 ### Configuration des actions
 
