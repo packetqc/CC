@@ -27,27 +27,24 @@ def sous_quiz(nom):
 
 def quiz_secondaire(nom, lettre):
     """Quiz secondaire avec sous-options lettre1, lettre2, lettre3 + Passer."""
-    sous_options_restantes = [f"{lettre}1", f"{lettre}2", f"{lettre}3"]
+    sous_options = [f"{lettre}1", f"{lettre}2", f"{lettre}3"]
     tous_resultats = {}
 
-    while sous_options_restantes:
+    while True:
         print(f"\n  == Quiz Secondaire ({nom}) ==")
-        for i, option in enumerate(sous_options_restantes, start=1):
+        for i, option in enumerate(sous_options, start=1):
             print(f"  {i}. {option}?")
+        print(f"  {len(sous_options) + 1}. Passer")
 
-        num_passer = len(sous_options_restantes) + 1
-        print(f"  {num_passer}. Passer")
+        choix = lire_choix(f"  Votre choix (1-{len(sous_options) + 1}) : ", len(sous_options) + 1)
 
-        choix = lire_choix(f"  Votre choix (1-{num_passer}) : ", num_passer)
-
-        if choix == num_passer:
+        if choix == len(sous_options) + 1:
             print(f"  Vous passez le quiz {nom}.")
             break
 
-        option_choisie = sous_options_restantes[choix - 1]
+        option_choisie = sous_options[choix - 1]
         reponse = sous_quiz(option_choisie)
         tous_resultats[option_choisie] = reponse
-        sous_options_restantes.remove(option_choisie)
 
     return tous_resultats
 
@@ -81,7 +78,7 @@ def afficher_grille(options, resultats_par_quiz):
         print(row)
         print(sep)
 
-    print("\nMerci d'avoir participé au quiz!")
+    print("\nMerci d'avoir complété l'étape de validation des travaux.")
 
 
 def quiz_principal():
