@@ -28,11 +28,11 @@ def _extraire_bilingue(texte):
 
 
 def _extraire_header_knowledge(header):
-    """Extrait les noms FR/EN, la lettre et la méthodologie d'un header de knowledge.
+    """Extrait les noms FR/EN, la lettre et la methodology d'un header de knowledge.
 
-    Format : "Nom FR | Nom EN (lettre: X, methodologie: nom)"
-    Le champ methodologie est optionnel.
-    Retourne (nom_fr, nom_en, lettre, methodologie)
+    Format : "Nom FR | Nom EN (lettre: X, methodology: nom)"
+    Le champ methodology est optionnel.
+    Retourne (nom_fr, nom_en, lettre, methodology)
     """
     # Extraire le bloc entre parenthèses
     m = re.match(r"(.+?)\s*\((.+)\)", header)
@@ -49,7 +49,7 @@ def _extraire_header_knowledge(header):
     else:
         nom_fr = nom_en = nom_part
 
-    # Extraire les paramètres (lettre, methodologie, etc.)
+    # Extraire les paramètres (lettre, methodology, etc.)
     params = {}
     for param in params_part.split(","):
         if ":" in param:
@@ -57,9 +57,9 @@ def _extraire_header_knowledge(header):
             params[key.strip().lower()] = val.strip()
 
     lettre = params.get("lettre", "")
-    methodologie = params.get("methodologie", None)
+    methodology = params.get("methodology", None)
 
-    return nom_fr, nom_en, lettre, methodologie
+    return nom_fr, nom_en, lettre, methodology
 
 
 def _parser_header_tableau(ligne_header):
@@ -109,7 +109,7 @@ def charger_methodologie(chemin=None, langue="fr"):
     }
 
     Chaque question contient : id, choix (label bilingue), action_vrai, message_vrai
-    Chaque knowledge peut contenir : methodologie (nom du fichier dans methodologies/)
+    Chaque knowledge peut contenir : methodology (nom du fichier dans methodologies/)
     """
     if chemin is None:
         chemin = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -160,11 +160,11 @@ def charger_methodologie(chemin=None, langue="fr"):
             c.strip() for c in versions[langue].split(",")
         ]
 
-    # Knowledge : sections ### ... (lettre: X[, methodologie: nom]) avec tableaux
+    # Knowledge : sections ### ... (lettre: X[, methodology: nom]) avec tableaux
     pattern_knowledge = r"### (.+? \(lettre: .+?\))\s*\n(.*?)(?=\n### |\Z)"
     for match in re.finditer(pattern_knowledge, contenu, re.DOTALL):
         header = match.group(1).strip()
-        nom_fr, nom_en, lettre, methodologie = _extraire_header_knowledge(header)
+        nom_fr, nom_en, lettre, methodology = _extraire_header_knowledge(header)
         nom = nom_fr if langue == "fr" else nom_en
         bloc_tableau = match.group(2)
 
@@ -212,8 +212,8 @@ def charger_methodologie(chemin=None, langue="fr"):
             "lettre": lettre,
             "questions": questions,
         }
-        if methodologie:
-            knowledge_entry["methodologie"] = methodologie
+        if methodology:
+            knowledge_entry["methodology"] = methodology
         config["knowledge_principal"]["knowledge"].append(knowledge_entry)
 
     return config

@@ -1,6 +1,6 @@
 ---
 name: documentation
-description: Skill de documentation. Lit la méthodologie documentation avant d'exécuter les tâches de documentation système ou utilisateur.
+description: Skill de documentation. Lit la methodology documentation avant d'exécuter les tâches de documentation système ou utilisateur.
 ---
 
 ## Skill Documentation
@@ -9,17 +9,17 @@ Ce skill est invoqué automatiquement par le knowledge-validation quand l'utilis
 
 ### Pré-exécution
 
-Avant d'exécuter toute tâche de documentation, lire la méthodologie spécifique :
+Avant d'exécuter toute tâche de documentation, lire la methodology spécifique :
 ```
-knowledge_config/methodologies/documentation.md
+knowledge_config/methodologies/methodology-documentation.md
 ```
 
-Cette lecture se fait via l'outil Read. Elle charge les instructions spécialisées pour la tâche à accomplir, sans encombrer la mémoire avec toutes les méthodologies du système.
+Cette lecture se fait via l'outil Read. Elle charge les instructions spécialisées pour la tâche à accomplir, sans encombrer la mémoire avec toutes les methodologies du système.
 
 ### Tâches disponibles
 
-- **D1 — Documentation système** : Suivre la section "Documentation système" de la méthodologie.
-- **D2 — Documentation utilisateur** : Suivre la section "Documentation utilisateur" de la méthodologie.
+- **D1 — Documentation système** : Suivre la section "Documentation système" de la methodology.
+- **D2 — Documentation utilisateur** : Suivre la section "Documentation utilisateur" de la methodology.
 - **D3 — Tous** : Exécuter D1 puis D2 en séquence.
 
 ### Résultat

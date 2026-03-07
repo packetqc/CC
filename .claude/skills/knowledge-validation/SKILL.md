@@ -19,7 +19,7 @@ La structure du knowledge (questions, actions, messages) est définie dans le fi
 **Format bilingue :** Le fichier de configuration supporte le français et l'anglais :
 - **Titre** : `# Titre FR | Title EN`
 - **Messages** : préfixés `FR:` et `EN:` sur des lignes séparées
-- **Noms de knowledge** : `### Nom FR | Name EN (lettre: X)` — optionnel : `(lettre: X, methodologie: nom)` pour associer une méthodologie spécifique (fichier `knowledge_config/methodologies/<nom>.md`)
+- **Noms de knowledge** : `### Nom FR | Name EN (lettre: X)` — optionnel : `(lettre: X, methodology: methodology-name)` pour associer une méthodologie spécifique (fichier `knowledge_config/methodologies/<methodology-name>.md`)
 - **Tableaux** : 6 colonnes — `| ID | Choix FR | Choix EN | Action | Message FR | Message EN |`
   - `ID` : identifiant technique (A1, B2, D1...)
   - `Choix FR` / `Choix EN` : label affiché dans AskUserQuestion selon la langue
@@ -293,11 +293,11 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 - Ce type d'action est **réutilisable** par n'importe quel knowledge qui souhaite offrir un raccourci "tout faire d'un coup"
 
 **Pour toutes les autres actions (fonction, programme) :**
-- **Lecture de méthodologie pré-exécution** : avant d'exécuter l'action, vérifier si le knowledge parent a un champ `methodologie` dans sa configuration (ex: `methodologie: documentation` dans le header du knowledge). Si oui :
-  1. Lire le fichier `knowledge_config/methodologies/<nom>.md` avec l'outil Read (ex: `knowledge_config/methodologies/documentation.md`)
-  2. Utiliser les instructions de cette méthodologie pour guider l'exécution de la fonction/programme
-  3. Cela permet à Claude d'être spécialisé pour la tâche sans charger toutes les méthodologies en mémoire
-- Si pas de champ `methodologie` : exécuter normalement sans lecture supplémentaire
+- **Lecture de methodology pré-exécution** : avant d'exécuter l'action, vérifier si le knowledge parent a un champ `methodology` dans sa configuration (ex: `methodology: methodology-documentation` dans le header du knowledge). Si oui :
+  1. Lire le fichier `knowledge_config/methodologies/<methodology>.md` avec l'outil Read (ex: `knowledge_config/methodologies/methodology-documentation.md`)
+  2. Utiliser les instructions de cette methodology pour guider l'exécution de la fonction/programme
+  3. Cela permet à Claude d'être spécialisé pour la tâche sans charger toutes les methodologies en mémoire
+- Si pas de champ `methodology` : exécuter normalement sans lecture supplémentaire
 - Afficher avec AskUserQuestion :
   - header: l'identifiant de la question (ex: "A1")
   - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodology-knowledge.md`
