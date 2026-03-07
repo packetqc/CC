@@ -41,7 +41,10 @@ Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_
 1. Mettre `en_cours` à `false`
 2. Sauvegarder le fichier
 3. Committer le fichier avec Bash : `git add .claude/quiz_resultats.json && git commit -m "quiz: validation terminée"`
-4. Afficher la grille de résultats
+4. Pousser la branche : `git push -u origin <branche-courante>`
+5. Créer un PR avec `gh pr create --title "Quiz: validation des travaux terminée" --body "Résultats de validation" --base main` (ignorer si le PR existe déjà)
+6. Merger le PR avec `gh pr merge --merge` (ignorer si erreur)
+7. Afficher la grille de résultats
 
 ### Configuration des actions
 
