@@ -250,11 +250,25 @@ class AfficherGrilleSkill(Skill):
 # État interne post-grille
 # =============================================================================
 
-# Flag interne : mis à True par compilation_metriques/compilation_temps
-# quand des changements sont détectés. Remis à False quand l'utilisateur
-# complète l'étape de documentation dans le quiz.
-# Consulté par confirmation_documentation pour décider si un rappel est nécessaire.
+# Flag interne : mis à True au moment de l'exécution réussie de la demande
+# (résultat "Vrai" à executer_demande). Les compilations le confirment si
+# elles détectent des changements. Remis à False quand l'utilisateur complète
+# l'étape de documentation dans le quiz.
 _documentation_requise = False
+
+
+def set_documentation_requise():
+    """Met le flag à True. Appelée quand une exécution de demande réussit
+    (résultat Vrai à executer_demande)."""
+    global _documentation_requise
+    _documentation_requise = True
+
+
+def reset_documentation_requise():
+    """Remet le flag à False. Appelée quand l'utilisateur complète
+    l'étape de documentation dans le quiz de validation."""
+    global _documentation_requise
+    _documentation_requise = False
 
 
 # =============================================================================
@@ -264,35 +278,35 @@ _documentation_requise = False
 def compilation_metriques(resultats):
     """Compile les métriques du knowledge. Appelée après l'affichage de la grille.
 
-    Si des changements de métriques sont détectés, met _documentation_requise à True.
+    Ne touche pas au flag _documentation_requise. Se contente de compiler.
     """
-    global _documentation_requise
-    # TODO: implémenter la détection de changements de métriques
-    # Si changements détectés : _documentation_requise = True
     pass
 
 
 def compilation_temps(resultats):
     """Compile les données de temps du knowledge. Appelée après l'affichage de la grille.
 
-    Si du temps a été accumulé (tâche exécutée), met _documentation_requise à True.
+    Ne touche pas au flag _documentation_requise. Se contente de compiler.
     """
-    global _documentation_requise
-    # TODO: implémenter la détection de temps accumulé
-    # Si temps accumulé : _documentation_requise = True
     pass
 
 
+# =============================================================================
+# Pré-sauvegarde (étape 9)
+# =============================================================================
+# L'étape pré-sauvegarde regroupe les sous-fonctions de conformité
+# exécutées avant la sauvegarde. confirmation_documentation est la
+# première règle. D'autres suivront.
+
 def confirmation_documentation(resultats):
-    """Règle de conformité pré-sauvegarde : rappel de documentation.
+    """Sous-fonction pré-sauvegarde #1 : rappel de documentation.
 
-    Consulte le flag _documentation_requise (posé par compilation_metriques
-    et compilation_temps). Si True, rappelle à l'utilisateur via
-    AskUserQuestion qu'il y a des changements non documentés.
-    L'utilisateur peut passer (Skip) — c'est un rappel, pas un bloqueur.
-
-    Si _documentation_requise est False (pas de changements détectés,
-    ou l'utilisateur a déjà documenté via le quiz), passe directement.
+    Consulte le flag _documentation_requise.
+    - Si True : rappelle à l'utilisateur via AskUserQuestion que des
+      changements non documentés ont été détectés. Suggère de documenter
+      avant la sauvegarde. L'utilisateur peut passer (Skip) — rappel
+      de discipline, pas un bloqueur.
+    - Si False : passe directement sans rien demander.
 
     Retourne True si pas de rappel nécessaire ou si l'utilisateur accepte,
     False s'il passe le rappel.
@@ -301,12 +315,21 @@ def confirmation_documentation(resultats):
     pass
 
 
-def reset_documentation_requise():
-    """Remet le flag à False. Appelée quand l'utilisateur complète
-    l'étape de documentation dans le quiz de validation."""
-    global _documentation_requise
-    _documentation_requise = False
+def pre_sauvegarde(resultats):
+    """Étape 9 : exécute toutes les règles de conformité pré-sauvegarde.
 
+    Regroupe les sous-fonctions de conformité qui doivent s'exécuter
+    avant la sauvegarde. Actuellement :
+    1. confirmation_documentation — rappel si documentation manquante
+
+    D'autres règles de conformité seront ajoutées ici.
+    """
+    confirmation_documentation(resultats)
+
+
+# =============================================================================
+# Sauvegarde (étape 10)
+# =============================================================================
 
 def sauvegarde(resultats):
     """Sauvegarde les résultats du knowledge. Appelée après l'affichage de la grille."""

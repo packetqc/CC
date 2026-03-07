@@ -89,7 +89,7 @@ Pour construire les résultats par défaut : pour chaque knowledge dans `methodo
 6. Afficher la grille de résultats
 7. Exécuter `compilation_metriques(resultats)` depuis `knowledge_skills.py`
 8. Exécuter `compilation_temps(resultats)` depuis `knowledge_skills.py`
-9. Exécuter `confirmation_documentation(resultats)` depuis `knowledge_skills.py` — **Règle de conformité** : vérifier si l'utilisateur a déjà complété l'étape de documentation (un des choix disponibles au niveau principal du knowledge). Si **déjà documenté** : passer directement sans rien demander. Si **pas encore documenté** et que les compilations (étapes 7-8) révèlent des changements : demander à l'utilisateur avec AskUserQuestion s'il souhaite documenter avant la sauvegarde. L'utilisateur peut passer (Skip) — c'est un rappel de discipline, pas un bloqueur. Première règle de conformité pré-sauvegarde.
+9. Exécuter `pre_sauvegarde(resultats)` depuis `knowledge_skills.py` — **Pré-sauvegarde** : exécute les règles de conformité avant la sauvegarde. Première sous-fonction : `confirmation_documentation` (rappel si `_documentation_requise` est True). D'autres règles suivront.
 10. Exécuter `sauvegarde(resultats)` depuis `knowledge_skills.py`
 Note : le fichier `knowledge_resultats.json` reste sur la branche de travail avec les résultats. Il sera nettoyé au démarrage de la prochaine session.
 
@@ -319,18 +319,18 @@ Exemple avec 5 knowledge dont certains ont des nombres de questions différents 
 - **Si complet** (aucun `"--"`) : afficher `message_fin_complet` de `methodology-knowledge.md`
 - **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
 
-**Fonctions post-grille :** Ces 4 fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-10 ci-dessus, **pas** par `AfficherGrilleSkill`. Elles sont découplées de la grille pour permettre une utilisation indépendante :
-1. `compilation_metriques(resultats)` — Compile les métriques. Si des changements sont détectés, met le flag interne `_documentation_requise = True`
-2. `compilation_temps(resultats)` — Compile le temps. Si du temps a été accumulé (tâche exécutée), met le flag interne `_documentation_requise = True`
-3. `confirmation_documentation(resultats)` — **Règle de conformité** : consulte le flag `_documentation_requise`. Si `True` (changements détectés ET l'utilisateur n'a pas encore documenté), rappelle via AskUserQuestion que des changements devraient être documentés avant la sauvegarde. Si `False`, passe directement. L'utilisateur peut toujours passer (Skip) — c'est un rappel de discipline, pas un bloqueur.
+**Fonctions post-grille :** Ces fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-10 ci-dessus :
+1. `compilation_metriques(resultats)` — Compile les métriques (ne touche pas au flag)
+2. `compilation_temps(resultats)` — Compile le temps (ne touche pas au flag)
+3. `pre_sauvegarde(resultats)` — Étape 9 : exécute les règles de conformité pré-sauvegarde. Contient actuellement `confirmation_documentation` comme première sous-fonction. D'autres règles seront ajoutées ici.
 4. `sauvegarde(resultats)` — Sauvegarde les résultats
 
 **Mécanisme du flag `_documentation_requise` :**
-- Mis à `True` par `compilation_metriques` ou `compilation_temps` quand des changements sont détectés
-- Remis à `False` par `reset_documentation_requise()` quand l'utilisateur complète l'étape de documentation dans le quiz de validation (choix au niveau principal, à définir)
-- Consulté par `confirmation_documentation` pour décider si un rappel est nécessaire
+- Mis à `True` par `set_documentation_requise()` quand une exécution de demande réussit (résultat Vrai à executer_demande / A3)
+- Remis à `False` par `reset_documentation_requise()` quand l'utilisateur complète l'étape de documentation dans le quiz (choix au niveau principal, à définir)
+- Consulté par `confirmation_documentation` (sous-fonction de `pre_sauvegarde`) : si `True` → rappel via AskUserQuestion, si `False` → passe directement. L'utilisateur peut toujours passer (Skip) — rappel de discipline, pas un bloqueur.
 
-Ces fonctions sont **toujours** exécutées après la grille, que le quiz soit complet ou non. L'appel se fait via `from knowledge_skills import compilation_metriques, compilation_temps, confirmation_documentation, sauvegarde`.
+Ces fonctions sont **toujours** exécutées après la grille, que le quiz soit complet ou non. L'appel se fait via `from knowledge_skills import compilation_metriques, compilation_temps, pre_sauvegarde, sauvegarde`.
 
 ### Important
 
