@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """Quiz imbriqué à 4 niveaux avec maximum 4 choix par niveau."""
+import subprocess
+import sys
+import os
 
 
 def lire_choix(prompt, max_choix):
@@ -9,6 +12,33 @@ def lire_choix(prompt, max_choix):
         if choix.isdigit() and 1 <= int(choix) <= max_choix:
             return int(choix)
         print(f"Choix invalide. Veuillez entrer un nombre entre 1 et {max_choix}.")
+
+
+def fonction_verification(nom):
+    """Fonction interne simulée."""
+    print(f"      >>> Je suis la FONCTION INTERNE qui a été appelée pour '{nom}'.")
+    print(f"      >>> Vérification en cours pour {nom}...")
+    print(f"      >>> Vérification terminée. Retour au quiz.")
+
+
+def appeler_programme_externe(nom):
+    """Appelle le programme externe action_externe.py."""
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "action_externe.py")
+    subprocess.run([sys.executable, script, nom])
+
+
+# Configuration : quelle action déclencher pour chaque question quand Vrai
+ACTIONS_VRAI = {
+    "A1": ("fonction", fonction_verification),
+    "A2": ("programme", appeler_programme_externe),
+    "A3": ("fonction", fonction_verification),
+    "B1": ("programme", appeler_programme_externe),
+    "B2": ("fonction", fonction_verification),
+    "B3": ("programme", appeler_programme_externe),
+    "C1": ("fonction", fonction_verification),
+    "C2": ("programme", appeler_programme_externe),
+    "C3": ("fonction", fonction_verification),
+}
 
 
 def sous_quiz(nom):
@@ -21,6 +51,11 @@ def sous_quiz(nom):
     choix = lire_choix(f"      Votre réponse pour {nom} (1/2/3) : ", 3)
     reponses = {1: "Vrai", 2: "Faux", 3: "Passer"}
     print(f"      Vous avez choisi : {reponses[choix]}")
+
+    if choix == 1 and nom in ACTIONS_VRAI:
+        _, action = ACTIONS_VRAI[nom]
+        action(nom)
+
     return reponses[choix]
 
 
