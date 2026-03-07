@@ -49,6 +49,25 @@ Pour construire les résultats par défaut : pour chaque knowledge dans `methodo
 2. Si le fichier existe et `en_cours` est `true` : reprendre le knowledge au niveau indiqué (survie au compactage)
 3. Si le fichier existe et `en_cours` est `false` : c'est un résidu d'une session précédente. Supprimer le fichier (`rm .claude/knowledge_resultats.json && git add .claude/knowledge_resultats.json && git commit -m "knowledge: nettoyage début de session" && git push -u origin <branche-courante>`), puis créer un nouveau fichier et démarrer le knowledge
 4. Si le fichier n'existe pas : créer le fichier avec les valeurs par défaut et démarrer le knowledge
+5. **Pré-remplissage (God Mode)** : Après l'étape 1-4, analyser le message initial de l'utilisateur. Si le message contient un bloc JSON `{"resultats": {...}}` (sur une ligne séparée, après la demande), l'extraire. La demande est le texte AVANT le bloc JSON.
+   - **Si aucun JSON trouvé dans le message** : pas de pré-remplissage, continuer normalement.
+   - **IMPORTANT** : Ne JAMAIS lire de fichier sur disque comme source de pré-remplissage. Le fichier `.claude/knowledge_prerempli.json.example` est un template de référence pour l'utilisateur uniquement.
+
+   Le format attendu :
+      ```json
+      {
+        "resultats": {
+          "Knowledge A": {"A1": "Vrai", "A2": "Faux"},
+          "Knowledge B": {"B1": "Vrai"}
+        }
+      }
+      ```
+      Seules les clés présentes sont fusionnées. Les questions absentes restent à `"--"`.
+
+   **Appliquer le pré-remplissage :**
+   a. Fusionner les valeurs dans `knowledge_resultats.json` : pour chaque knowledge et chaque question présente dans le pré-rempli, remplacer la valeur `"--"` par la valeur fournie (Vrai, Faux, ou Passer)
+   b. Sauvegarder `knowledge_resultats.json` mis à jour
+   c. Committer : `git add .claude/knowledge_resultats.json && git commit -m "knowledge: pré-remplissage appliqué"`
 
 **Après CHAQUE réponse de l'utilisateur (persistance sur branche de travail) :**
 1. Mettre à jour les résultats dans le JSON
@@ -138,6 +157,13 @@ Si on entre dans le Knowledge Secondaire et que `demande_reformulee` est non `nu
 - Les prérequis de `executer_demande` sont déjà satisfaits (les réponses précédentes comptent)
 
 ### Niveau 3 : Sous-knowledge
+
+**Saut automatique des questions pré-remplies :**
+Avant d'afficher le choix Vrai/Faux/Passer, vérifier dans `knowledge_resultats.json` si la question a déjà une réponse (≠ `"--"`). Si oui :
+- Afficher : `"[question] : déjà répondu → [valeur]"` (ex: `"A1 : déjà répondu → Vrai"`)
+- Ne PAS demander de choix à l'utilisateur
+- Retourner directement au Knowledge Secondaire
+- L'utilisateur peut toujours re-sélectionner manuellement cette question au niveau 2 pour **écraser** la valeur pré-remplie (dans ce cas, afficher normalement le choix Vrai/Faux/Passer avec une option supplémentaire "Garder [valeur actuelle]")
 
 Pour chaque question, vérifier d'abord le type d'action dans `methodology-knowledge.md` :
 
