@@ -202,42 +202,174 @@ class KnowledgePrincipalSkill(Skill):
 class AfficherGrilleSkill(Skill):
     """Skill pour afficher la grille de résultats."""
 
-    def __init__(self, nom, knowledge_config, message_fin=""):
+    def __init__(self, nom, knowledge_config, message_fin_complet="", message_fin_incomplet=""):
         super().__init__(nom, "Affichage grille")
         self.knowledge_config = knowledge_config
-        self.message_fin = message_fin
+        self.message_fin_complet = message_fin_complet
+        self.message_fin_incomplet = message_fin_incomplet
 
     def executer(self, **kwargs):
         resultats = self.registre.get_resultats()
-        idx = 5
-        col = max(10, max(len(label) + 2 for label, _, _ in self.knowledge_config))
-        sep = "+" + "-" * idx + ("+" + "-" * col) * len(self.knowledge_config) + "+"
-        sep_header = "+" + "=" * idx + ("+" + "=" * col) * len(self.knowledge_config) + "+"
+        idx = 7
+        col = 10
+        max_questions = max(len(qs) for _, _, qs in self.knowledge_config)
+        sep = "+" + "-" * idx + ("+" + "-" * col) * max_questions + "+"
+        sep_header = "+" + "=" * idx + ("+" + "=" * col) * max_questions + "+"
 
         print("\n        GRILLE DE RÉSULTATS")
         print(sep)
         header = f"|{'':^{idx}}"
-        for label, _, _ in self.knowledge_config:
-            header += f"|{label:^{col}}"
+        for n in range(1, max_questions + 1):
+            header += f"|{n:^{col}}"
         header += "|"
         print(header)
         print(sep_header)
 
-        max_questions = max(len(qs) for _, _, qs in self.knowledge_config)
-        for n in range(1, max_questions + 1):
-            row = f"|{n:^{idx}}"
-            for label, lettre, _ in self.knowledge_config:
+        complet = True
+        for label, lettre, questions in self.knowledge_config:
+            row = f"|{('Knw ' + lettre):^{idx}}"
+            for n in range(1, max_questions + 1):
                 sous_option = f"{lettre}{n}"
-                if label in resultats and sous_option in resultats[label]:
+                if n <= len(questions) and label in resultats and sous_option in resultats[label]:
                     val = resultats[label][sous_option]
-                else:
+                elif n <= len(questions):
                     val = "--"
+                    complet = False
+                else:
+                    val = ""
                 row += f"|{val:^{col}}"
             row += "|"
             print(row)
             print(sep)
 
-        print(f"\n{self.message_fin}")
+        message = self.message_fin_complet if complet else self.message_fin_incomplet
+        print(f"\n{message}")
+
+
+# =============================================================================
+# État interne post-grille
+# =============================================================================
+
+# Flag interne : documentation requise suite à des changements détectés.
+# - Remis à False quand l'exécution DÉMARRE (A3) — ardoise propre.
+# - Mis à True par les compilations si elles détectent des changements.
+# - Consulté par confirmation_documentation qui le compare avec le résultat
+#   de l'étape Documentation (dernière rangée du quiz) pour décider si un
+#   rappel est nécessaire.
+_documentation_requise = False
+
+
+def set_documentation_requise():
+    """Met le flag à True. Appelée par les compilations quand elles
+    détectent des changements qui nécessitent documentation."""
+    global _documentation_requise
+    _documentation_requise = True
+
+
+def reset_documentation_requise():
+    """Remet le flag à False. Appelée quand l'exécution de la demande
+    DÉMARRE (A3) — on repart à zéro avant de savoir s'il y aura
+    des changements."""
+    global _documentation_requise
+    _documentation_requise = False
+
+
+# =============================================================================
+# Fonctions post-grille
+# =============================================================================
+
+def compilation_metriques(resultats):
+    """Compile les métriques du knowledge. Appelée après l'affichage de la grille.
+
+    Détecte si des changements de métriques ont eu lieu. Si oui,
+    met _documentation_requise à True via set_documentation_requise().
+    """
+    global _documentation_requise
+    # TODO: implémenter la détection de changements de métriques
+    # Si changements détectés : set_documentation_requise()
+    pass
+
+
+def compilation_temps(resultats):
+    """Compile les données de temps du knowledge. Appelée après l'affichage de la grille.
+
+    Détecte si du temps a été accumulé (changements). Si oui,
+    met _documentation_requise à True via set_documentation_requise().
+    """
+    global _documentation_requise
+    # TODO: implémenter la détection de temps accumulé
+    # Si changements détectés : set_documentation_requise()
+    pass
+
+
+# =============================================================================
+# Pré-sauvegarde (étape 9)
+# =============================================================================
+# L'étape pré-sauvegarde regroupe les sous-fonctions de conformité
+# exécutées avant la sauvegarde. confirmation_documentation est la
+# première règle. D'autres suivront.
+
+def confirmation_documentation(resultats):
+    """Sous-fonction pré-sauvegarde #1 : rappel de documentation.
+
+    Compare deux valeurs :
+    1. Le flag interne _documentation_requise (mis à True par les compilations
+       si des changements ont été détectés)
+    2. Le résultat de l'étape Documentation dans le quiz (dernière rangée
+       du tableau des résultats — le dernier knowledge au niveau principal)
+
+    Logique de comparaison :
+    - Flag False → passe (rien à documenter, pas de changements)
+    - Flag True + résultat doc "Vrai" → passe (l'utilisateur a documenté)
+    - Flag True + résultat doc "--"/"Faux"/"Passer" → suggérer via
+      AskUserQuestion (rappel de discipline, pas un bloqueur)
+
+    Retourne True si pas de rappel nécessaire ou si l'utilisateur a documenté,
+    False si l'utilisateur n'a pas documenté et passe le rappel.
+    """
+    if not _documentation_requise:
+        return True
+
+    # Chercher le dernier knowledge (étape Documentation) dans les résultats
+    knowledge_names = list(resultats.keys()) if resultats else []
+    if not knowledge_names:
+        return True
+
+    dernier_knowledge = knowledge_names[-1]
+    resultats_doc = resultats.get(dernier_knowledge, {})
+
+    # Vérifier si au moins une question du dernier knowledge a "Vrai"
+    # (l'utilisateur a complété l'étape de documentation)
+    documentation_faite = any(v == "Vrai" for v in resultats_doc.values())
+
+    if documentation_faite:
+        return True
+
+    # Flag True + documentation non faite → rappel nécessaire
+    # TODO: AskUserQuestion pour suggérer la documentation
+    # L'utilisateur peut Skip — c'est un rappel, pas un bloqueur
+    return False
+
+
+def pre_sauvegarde(resultats):
+    """Étape 9 : exécute toutes les règles de conformité pré-sauvegarde.
+
+    Regroupe les sous-fonctions de conformité qui doivent s'exécuter
+    avant la sauvegarde. Actuellement :
+    1. confirmation_documentation — rappel si documentation manquante
+
+    D'autres règles de conformité seront ajoutées ici.
+    """
+    confirmation_documentation(resultats)
+
+
+# =============================================================================
+# Sauvegarde (étape 10)
+# =============================================================================
+
+def sauvegarde(resultats):
+    """Sauvegarde les résultats du knowledge. Appelée après l'affichage de la grille."""
+    pass
 
 
 # =============================================================================
@@ -281,7 +413,8 @@ def construire_knowledge():
 
     # Skill grille
     registre.enregistrer("afficher_grille", AfficherGrilleSkill(
-        "afficher_grille", knowledge_config, config["message_fin"]))
+        "afficher_grille", knowledge_config,
+        config["message_fin_complet"], config["message_fin_incomplet"]))
 
     # Skill principal
     knowledge_secondaires = [(label, label) for label, _, _ in knowledge_config]

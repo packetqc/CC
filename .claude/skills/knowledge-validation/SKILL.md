@@ -13,12 +13,27 @@ La structure du knowledge (questions, actions, messages) est définie dans le fi
 - La liste des knowledge (noms, lettres, questions)
 - Les actions associées à chaque question (fonction/programme)
 - Les messages à afficher quand l'utilisateur répond Vrai
-- Les choix disponibles pour le sous-knowledge (Vrai, Faux, Passer)
+- Les choix disponibles pour le sous-knowledge (Vrai, Faux, Passer / True, False, Skip)
 - Le message de fin
+
+**Format bilingue :** Le fichier de configuration supporte le français et l'anglais :
+- **Titre** : `# Titre FR | Title EN`
+- **Messages** : préfixés `FR:` et `EN:` sur des lignes séparées
+- **Noms de knowledge** : `### Nom FR | Name EN (lettre: X)` — optionnel : `(lettre: X, methodology: methodology-name)` pour associer une méthodologie spécifique (fichier `knowledge_config/methodologies/<methodology-name>.md`)
+- **Tableaux** : 6 colonnes — `| ID | Choix FR | Choix EN | Action | Message FR | Message EN |`
+  - `ID` : identifiant technique (A1, B2, D1...)
+  - `Choix FR` / `Choix EN` : label affiché dans AskUserQuestion selon la langue
+  - `Action` : type d'action (fonction, programme, executer_demande)
+  - `Message FR` / `Message EN` : message affiché quand l'utilisateur répond Vrai
+- **Choix du sous-knowledge** : `FR: Vrai, Faux, Passer` / `EN: True, False, Skip`
+
+Le parseur (`knowledge_config/__init__.py`) accepte un paramètre `langue` ("fr" ou "en") et retourne les données dans la langue sélectionnée. Par défaut : "fr". Chaque question retournée contient un champ `choix` (le label bilingue) en plus de `id`, `action_vrai`, `message_vrai`.
+
+**Pour AskUserQuestion**, utiliser le champ `choix` comme label des options (au lieu de l'ID brut). L'ID reste utilisé pour les clés internes et la grille de résultats.
 
 Utiliser ces données pour construire dynamiquement les options AskUserQuestion, les résultats par défaut, et les messages d'action. Ne PAS utiliser de valeurs codées en dur.
 
-**Exception hardcodée :** La 3e question du 1er knowledge est TOUJOURS de type `executer_demande`, peu importe son ID ou ce qui est écrit dans `methodology-knowledge.md`. Cette règle est programmatique et prioritaire sur le contenu du fichier de configuration.
+**Exception hardcodée :** La **dernière** question du 1er knowledge est TOUJOURS de type `executer_demande`, peu importe son ID ou ce qui est écrit dans `methodology-knowledge.md`. Cette règle est programmatique et prioritaire sur le contenu du fichier de configuration.
 
 ### Persistance des résultats (survie au compactage)
 
@@ -87,6 +102,10 @@ Pour construire les résultats par défaut : pour chaque knowledge dans `methodo
    - Via git direct : `git fetch origin main && git checkout main && git merge <branche> && git push origin main && git checkout <branche>`
    - Si toutes échouent : afficher "Note: le merge vers main doit être fait manuellement."
 6. Afficher la grille de résultats
+7. Exécuter `compilation_metriques(resultats)` depuis `knowledge_skills.py` — si des changements de métriques sont détectés, met `_documentation_requise = True`
+8. Exécuter `compilation_temps(resultats)` depuis `knowledge_skills.py` — si des changements de temps sont détectés, met `_documentation_requise = True`
+9. Exécuter `pre_sauvegarde(resultats)` depuis `knowledge_skills.py` — **Pré-sauvegarde** : exécute les règles de conformité. Première sous-fonction : `confirmation_documentation` (compare le flag interne avec le résultat de l'étape Documentation du quiz). D'autres règles suivront.
+10. Exécuter `sauvegarde(resultats)` depuis `knowledge_skills.py`
 Note : le fichier `knowledge_resultats.json` reste sur la branche de travail avec les résultats. Il sera nettoyé au démarrage de la prochaine session.
 
 ### Configuration des actions
@@ -125,6 +144,7 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 **Mode complet (demande_executee = true) :**
 - Afficher avec AskUserQuestion (multiSelect: false) :
   - header: "Principal"
+  - question: format `"Choisir. (Si vous avez terminé, appuyez sur Skip)"` — en anglais : `"Choose. (If you are done, press Skip)"`
   - Tous les knowledge lus depuis `methodology-knowledge.md` (le 1er knowledge reste toujours accessible pour relancer l'exécution via sa 3e question)
   - Appliquer la pagination sans option de contrôle (Skip natif remplace Terminer)
 - Si l'utilisateur choisit un knowledge : lancer le Knowledge Secondaire correspondant (questionnaire de validation)
@@ -137,6 +157,7 @@ AskUserQuestion est limité à 4 options (2 à 4). Pour supporter un nombre illi
 
 Pour chaque knowledge, afficher avec AskUserQuestion :
 - header: le nom du knowledge (ex: "Knowledge A")
+- question: format `"Choisir parmi les options suivantes. (Pour passer, appuyez sur Skip)"` — en anglais : `"Choose from the following options. (To skip, press Skip)"`
 - Lire toutes les questions du knowledge depuis `methodology-knowledge.md`
 - Appliquer la pagination sans option de contrôle (Skip natif remplace Passer)
 - Si l'utilisateur choisit `Suivant ▸` : incrémenter la page (revenir à 0 après la dernière page) et réafficher
@@ -262,7 +283,29 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 - Après une exécution **Vrai**, effacer `demande_reformulee` (remettre à `null`)
 - Après une nouvelle reformulation, écraser la valeur précédente
 
+**Si l'action est `tous` (ex: D3) :**
+- Cette action est **programmatique** — ne PAS afficher de choix Vrai/Faux/Passer
+- Quand l'utilisateur sélectionne cette option au niveau secondaire :
+  1. Itérer automatiquement à travers TOUTES les autres questions du même knowledge (celles qui ne sont PAS de type `tous`)
+  2. Pour chaque question : exécuter l'action associée comme si l'utilisateur avait répondu **Vrai** (afficher le message, déclencher la fonction/programme)
+  3. Pour chaque question : enregistrer "Vrai" si l'exécution a réussi, "Faux" si elle a échoué
+  4. **Évaluer le résultat global :**
+     - **Si TOUTES les questions ont réussi (toutes Vrai)** :
+       - Enregistrer "Vrai" pour la question `tous` elle-même
+       - Afficher le message associé à la question `tous`
+       - **Retourner directement au Knowledge Principal** (pas au secondaire — tout est fait, inutile de rester)
+     - **Si AU MOINS UNE question a échoué (au moins un Faux)** :
+       - Enregistrer "Faux" pour la question `tous`
+       - Afficher un récapitulatif des résultats : pour chaque question, indiquer le statut (Vrai/Faux)
+       - **Rester au Knowledge Secondaire** pour permettre à l'utilisateur de re-sélectionner individuellement les questions en échec et de les relancer (ex: système externe indisponible, timeout, etc.)
+- Ce type d'action est **réutilisable** par n'importe quel knowledge qui souhaite offrir un raccourci "tout faire d'un coup"
+
 **Pour toutes les autres actions (fonction, programme) :**
+- **Lecture de methodology pré-exécution** : avant d'exécuter l'action, vérifier si le knowledge parent a un champ `methodology` dans sa configuration (ex: `methodology: methodology-documentation` dans le header du knowledge). Si oui :
+  1. Lire le fichier `knowledge_config/methodologies/<methodology>.md` avec l'outil Read (ex: `knowledge_config/methodologies/methodology-documentation.md`)
+  2. Utiliser les instructions de cette methodology pour guider l'exécution de la fonction/programme
+  3. Cela permet à Claude d'être spécialisé pour la tâche sans charger toutes les methodologies en mémoire
+- Si pas de champ `methodology` : exécuter normalement sans lecture supplémentaire
 - Afficher avec AskUserQuestion :
   - header: l'identifiant de la question (ex: "A1")
   - options: utiliser les choix définis dans `sous_knowledge.choix` de `methodology-knowledge.md`
@@ -273,43 +316,65 @@ Quand l'exécution retourne Faux, NE PAS retourner directement au Knowledge Seco
 
 Quand l'utilisateur fait **Skip** au niveau principal, construire et afficher un tableau dynamique basé sur les knowledge et questions présents dans `methodology-knowledge.md` :
 
-- **Colonnes** : une par knowledge trouvé (ex: Knw A, Knw B, Knw C, Knw D...)
-- **Lignes** : autant que le nombre maximum de questions parmi tous les knowledge
+- **Lignes** : une par knowledge trouvé (ex: Knw A, Knw B, Knw C, Knw D...)
+- **Colonnes** : autant que le nombre maximum de questions parmi tous les knowledge (numérotées 1, 2, 3...)
 - **Valeurs** : remplacer par la réponse (Vrai, Faux, Passer) ou `--` si non répondu
 - **Largeur de colonne** : 10 caractères, valeurs centrées
 
 Exemple avec 3 knowledge de 3 questions chacun :
 ```
         GRILLE DE RÉSULTATS
-+-----+----------+----------+----------+
-|     |  Knw A   |  Knw B   |  Knw C   |
-+=====+==========+==========+==========+
-|  1  |   Vrai   |    --    |  Faux    |
-+-----+----------+----------+----------+
-|  2  |    --    |   Vrai   |    --    |
-+-----+----------+----------+----------+
-|  3  |  Passer  |    --    |   Vrai   |
-+-----+----------+----------+----------+
++-------+----------+----------+----------+
+|       |    1     |    2     |    3     |
++=======+==========+==========+==========+
+| Knw A |   Vrai   |    --    |  Passer  |
++-------+----------+----------+----------+
+| Knw B |    --    |   Vrai   |    --    |
++-------+----------+----------+----------+
+| Knw C |  Faux    |    --    |   Vrai   |
++-------+----------+----------+----------+
 ```
 
 Exemple avec 5 knowledge dont certains ont des nombres de questions différents :
 ```
         GRILLE DE RÉSULTATS
-+-----+----------+----------+----------+----------+----------+
-|     |  Knw A   |  Knw B   |  Knw C   |  Knw D   |  Knw E   |
-+=====+==========+==========+==========+==========+==========+
-|  1  |   Vrai   |    --    |  Faux    |   Vrai   |    --    |
-+-----+----------+----------+----------+----------+----------+
-|  2  |    --    |   Vrai   |    --    |    --    |   Vrai   |
-+-----+----------+----------+----------+----------+----------+
-|  3  |  Passer  |    --    |   Vrai   |          |    --    |
-+-----+----------+----------+----------+----------+----------+
-|  4  |          |          |          |          |  Faux    |
-+-----+----------+----------+----------+----------+----------+
++-------+----------+----------+----------+----------+
+|       |    1     |    2     |    3     |    4     |
++=======+==========+==========+==========+==========+
+| Knw A |   Vrai   |    --    |  Passer  |          |
++-------+----------+----------+----------+----------+
+| Knw B |    --    |   Vrai   |    --    |          |
++-------+----------+----------+----------+----------+
+| Knw C |  Faux    |    --    |   Vrai   |          |
++-------+----------+----------+----------+----------+
+| Knw D |   Vrai   |    --    |          |          |
++-------+----------+----------+----------+----------+
+| Knw E |    --    |   Vrai   |    --    |  Faux    |
++-------+----------+----------+----------+----------+
 ```
 (cellules vides si le knowledge n'a pas autant de questions)
 
-Utiliser `message_fin` de `methodology-knowledge.md` comme message de fin après la grille.
+**Message de fin conditionnel :** Après la grille, vérifier si toutes les questions de tous les knowledge ont été répondues (aucune valeur `"--"` dans les résultats) :
+- **Si complet** (aucun `"--"`) : afficher `message_fin_complet` de `methodology-knowledge.md`
+- **Si incomplet** (au moins un `"--"`) : afficher `message_fin_incomplet` de `methodology-knowledge.md`
+
+**Fonctions post-grille :** Ces fonctions (définies dans `knowledge_skills.py`) sont appelées par le flux knowledge-validation aux étapes 7-10 ci-dessus :
+1. `compilation_metriques(resultats)` — Compile les métriques. Si des changements sont détectés, met `_documentation_requise = True`
+2. `compilation_temps(resultats)` — Compile le temps. Si des changements sont détectés, met `_documentation_requise = True`
+3. `pre_sauvegarde(resultats)` — Étape 9 : exécute les règles de conformité pré-sauvegarde. Première sous-fonction : `confirmation_documentation`. D'autres règles suivront.
+4. `sauvegarde(resultats)` — Sauvegarde les résultats
+
+**Mécanisme du flag `_documentation_requise` — cycle de vie :**
+1. **Exécution démarre (A3)** → `reset_documentation_requise()` → flag = `False` (ardoise propre — on ne sait pas encore s'il y aura des changements)
+2. **Compilations** (étapes 7-8) → détectent des changements → `set_documentation_requise()` → flag = `True` (documentation requise car changements détectés)
+3. **`confirmation_documentation`** (sous-fonction de `pre_sauvegarde`, étape 9) → **compare deux valeurs** :
+   - Le flag interne `_documentation_requise` (True si les compilations ont détecté des changements)
+   - Le résultat de l'étape Documentation dans le quiz (dernière rangée du tableau des résultats = dernier knowledge au niveau principal, à venir)
+   - **Flag `False`** → passe (pas de changements, rien à documenter)
+   - **Flag `True` + résultat doc `Vrai`** → passe (l'utilisateur a documenté)
+   - **Flag `True` + résultat doc `--`/`Faux`/`Passer`** → suggérer via AskUserQuestion (rappel de discipline, pas un bloqueur — l'utilisateur peut Skip, il repassera dans ~15 min)
+
+Ces fonctions sont **toujours** exécutées après la grille, que le quiz soit complet ou non. L'appel se fait via `from knowledge_skills import compilation_metriques, compilation_temps, pre_sauvegarde, sauvegarde`.
 
 ### Important
 

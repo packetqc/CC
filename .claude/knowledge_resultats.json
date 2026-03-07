@@ -9,6 +9,7 @@
   "resultats": {
     "Knowledge A": {"A1": "Vrai", "A2": "Vrai", "A3": "Vrai"},
     "Knowledge B": {"B1": "--", "B2": "--", "B3": "--"},
-    "Knowledge C": {"C1": "--", "C2": "--", "C3": "--"}
+    "Knowledge C": {"C1": "--", "C2": "--", "C3": "--"},
+    "Documentation": {"D1": "Vrai", "D2": "Vrai", "D3": "Vrai"}
   }
 }
