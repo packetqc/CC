@@ -27,9 +27,9 @@ Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_
 
 **Au démarrage du skill :**
 1. Lire `.claude/quiz_resultats.json` avec l'outil Read
-2. Si le fichier existe et `en_cours` est `true` : reprendre le quiz au niveau indiqué
+2. Si le fichier existe et `en_cours` est `true` : reprendre le quiz au niveau indiqué (survie au compactage)
 3. Si le fichier n'existe pas : créer le fichier avec les valeurs par défaut et démarrer le quiz
-4. Si `en_cours` est `false` : le quiz est déjà terminé, ne pas relancer
+4. Le quiz se lance à CHAQUE nouvelle session (le fichier est supprimé à la fin)
 
 **Après CHAQUE réponse de l'utilisateur (persistance sur branche de travail) :**
 1. Mettre à jour les résultats dans le JSON
@@ -43,9 +43,9 @@ Les résultats du quiz DOIVENT être sauvegardés dans le fichier `.claude/quiz_
 2. Sauvegarder le fichier
 3. Committer sur la branche de travail : `git add .claude/quiz_resultats.json && git commit -m "quiz: validation terminée"`
 4. Pousser sur la branche de travail : `git push -u origin <branche-courante>`
-5. Créer un PR vers main : `gh pr create --title "Quiz: validation des travaux terminée" --body "Résultats de validation" --base main` (ignorer si le PR existe déjà)
-6. Merger le PR dans main : `gh pr merge --merge` (ignorer si erreur)
-7. Afficher la grille de résultats
+5. Synchroniser vers main avec git : `git fetch origin main && git checkout main && git merge <branche-courante> && git push origin main && git checkout <branche-courante>` (ignorer si erreur)
+6. Afficher la grille de résultats
+7. Supprimer le fichier JSON pour que le quiz redémarre à la prochaine session : `rm .claude/quiz_resultats.json && git add .claude/quiz_resultats.json && git commit -m "quiz: nettoyage pour prochaine session" && git push -u origin <branche-courante>`
 
 ### Configuration des actions
 
