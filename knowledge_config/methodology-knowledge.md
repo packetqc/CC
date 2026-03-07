@@ -21,10 +21,9 @@ EN: True, False, Skip
 
 | ID | Choix FR                 | Choix EN                 | Action           | Message FR                                                 | Message EN                                                  |
 |----|--------------------------|--------------------------|------------------|------------------------------------------------------------|-------------------------------------------------------------|
-| A1 | Confirmez le titre       | Verification             | fonction         | >>> Je suis la fonction A1.                                | >>> I am function A1.                                       |
-| A2 | Confirmez la description | Preparation              | programme        | >>> Je suis le programme A2.                               | >>> I am program A2.                                        |
-| A3 | Confirmez le projet      | Execute request          | fonction         | >>> Je suis la fonction A3. |     |
-
+| A1 | Confirmez le titre       | Confirm the title        | fonction         | >>> Je suis la fonction A1.                                | >>> I am function A1.                                       |
+| A2 | Confirmez la description | Confirm the description  | programme        | >>> Je suis le programme A2.                               | >>> I am program A2.                                        |
+| A3 | Confirmez le projet      | Confirm the project      | fonction         | >>> Je suis la fonction A3.                                | >>> I am function A3.                                       |
 | A4 | Exécuter la demande      | Execute request          | executer_demande | (programmatique - exécute la commande initiale de session) | (programmatic - executes the initial session command)       |
 
 ### Knowledge B | Knowledge B (lettre: B)
