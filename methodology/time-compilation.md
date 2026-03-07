@@ -414,4 +414,3 @@ In the Knowledge system, training artifacts are **generated during work**:
 
 - Publication #20 — Session Metrics & Time Compilation (full specification)
 - `methodology/metrics-compilation.md` — Metrics compilation routine (parallel sheet)
-- `methodology/documentation-generation.md` — Incremental compilation routine (parent principle)

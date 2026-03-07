@@ -22,7 +22,7 @@ Executes as a sub-task within the task workflow implement stage.
 
 ## Protocol
 
-Full specification: `methodology/documentation-generation.md`, Publication #18
+Full specification: `methodology/methodology-documentation.md`
 
 ### Three-Tier Publication Structure
 

@@ -263,4 +263,3 @@ Enterprise ventilation is defined in detail in `methodology/time-compilation.md`
 
 - Publication #20 — Session Metrics & Time Compilation (full specification)
 - `methodology/time-compilation.md` — Time compilation routine (parallel sheet)
-- `methodology/documentation-generation.md` — Incremental compilation routine (parent principle)

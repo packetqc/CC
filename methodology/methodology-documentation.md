@@ -78,4 +78,3 @@ La documentation utilisateur couvre les guides, tutoriels et documents créés p
 - `methodology/metrics-compilation.md` — Routine de compilation des métriques
 - `methodology/time-compilation.md` — Routine de compilation du temps
 - `.claude/skills/github/SKILL.md` — Protocole commentaires temps réel bidirectionnels
-- `methodology/documentation-generation.md` (projet knowledge) — Méthodologie mère dont celle-ci hérite
