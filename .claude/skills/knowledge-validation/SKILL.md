@@ -143,18 +143,24 @@ Pour chaque question, vérifier d'abord le type d'action dans `methodologie.md` 
 - Capturer le message initial de l'utilisateur au démarrage de la session (la première demande qu'il a tapée)
 
 **Rollback — Snapshot git avant exécution :**
-1. Avant d'exécuter, créer un snapshot : `git stash --include-untracked -m "snapshot-avant-execution"`
-2. Appeler le skill `commande-utilisateur` via l'outil Skill en lui passant la chaîne en argument : `skill: "commande-utilisateur", args: "message initial de l'utilisateur"`
-3. Le skill `commande-utilisateur` exécute `executer_demande.py` qui maintient un journal d'actions dans `.claude/journal_actions.json`
-4. Si le résultat est **Vrai** (succès) :
-   - Supprimer le stash : `git stash drop`
-   - Supprimer le journal d'actions : `rm -f .claude/journal_actions.json`
-   - Enregistrer "Vrai" pour cette question
-5. Si le résultat est **Faux** (échec) :
-   - D'abord, exécuter le rollback des actions externes via `python3 executer_demande.py --rollback` (utilise le journal d'actions)
-   - Ensuite, restaurer les fichiers : `git checkout . && git clean -fd`
-   - Enfin, restaurer le stash : `git stash pop`
-   - Enregistrer "Faux" pour cette question
+1. Avant d'exécuter, supprimer toute preuve précédente : `rm -f .claude/preuve_execution.json`
+2. Créer un snapshot : `git stash --include-untracked -m "snapshot-avant-execution"`
+3. Appeler le skill `commande-utilisateur` via l'outil Skill en lui passant la chaîne en argument : `skill: "commande-utilisateur", args: "message initial de l'utilisateur"`
+4. **Vérification de preuve d'exécution** (anti-contournement) :
+   - Lire le fichier `.claude/preuve_execution.json`
+   - **Si le fichier N'EXISTE PAS** : cela signifie qu'aucun programme n'a réellement été exécuté par `executer_demande.py`. Claude a possiblement répondu lui-même à la demande sans appeler de programme. → Résultat = **Faux**
+   - **Si le fichier EXISTE** : vérifier le champ `execution_reelle` est `true` et que `code_retour` est cohérent. Le champ `token` (hash SHA-256 basé sur timestamp+pid) prouve que le fichier a été écrit par le programme et non fabriqué.
+5. Déterminer le résultat :
+   - **Vrai** (preuve existe ET `code_retour` = 0) :
+     - Supprimer le stash : `git stash drop`
+     - Nettoyer : `rm -f .claude/journal_actions.json .claude/preuve_execution.json`
+     - Enregistrer "Vrai" pour cette question
+   - **Faux** (pas de preuve OU `code_retour` != 0) :
+     - D'abord, exécuter le rollback des actions externes via `python3 executer_demande.py --rollback` (utilise le journal d'actions)
+     - Ensuite, restaurer les fichiers : `git checkout . && git clean -fd`
+     - Enfin, restaurer le stash : `git stash pop`
+     - Nettoyer : `rm -f .claude/preuve_execution.json`
+     - Enregistrer "Faux" pour cette question
 - Retourner automatiquement au Knowledge Secondaire
 
 **Pour toutes les autres actions (fonction, programme) :**

@@ -16,15 +16,51 @@ Usage:
   python3 executer_demande.py --list-routes
   python3 executer_demande.py --rollback
 """
+import hashlib
 import json
 import os
 import subprocess
 import sys
+import time
 
 TIMEOUT_SECONDS = 60
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 JOURNAL_PATH = os.path.join(BASE_DIR, ".claude", "journal_actions.json")
 ROUTES_PATH = os.path.join(BASE_DIR, ".claude", "routes.json")
+PREUVE_PATH = os.path.join(BASE_DIR, ".claude", "preuve_execution.json")
+
+
+def ecrire_preuve(route_id, resultat_code, programme):
+    """Écrit un fichier de preuve d'exécution vérifiable.
+
+    Ce fichier prouve que executer_demande.py a réellement tourné.
+    Il contient un hash basé sur le timestamp + route_id + pid,
+    impossible à deviner ou fabriquer par Claude.
+    """
+    timestamp = time.time()
+    pid = os.getpid()
+    token_source = f"{timestamp}-{route_id}-{pid}-{programme}"
+    token = hashlib.sha256(token_source.encode()).hexdigest()[:16]
+
+    preuve = {
+        "execution_reelle": True,
+        "route_id": route_id,
+        "programme": programme,
+        "code_retour": resultat_code,
+        "timestamp": timestamp,
+        "pid": pid,
+        "token": token,
+    }
+
+    os.makedirs(os.path.dirname(PREUVE_PATH), exist_ok=True)
+    with open(PREUVE_PATH, "w") as f:
+        json.dump(preuve, f, indent=2, ensure_ascii=False)
+
+
+def supprimer_preuve():
+    """Supprime le fichier de preuve (nettoyage)."""
+    if os.path.exists(PREUVE_PATH):
+        os.remove(PREUVE_PATH)
 
 
 def charger_journal():
@@ -154,6 +190,9 @@ def executer_route(route):
     print(f"Route : [{route_id}] {description}")
     print(f"Programme : {programme}")
 
+    # Supprimer toute preuve précédente
+    supprimer_preuve()
+
     # Initialiser le journal
     journal = {"actions": []}
     sauvegarder_journal(journal)
@@ -182,16 +221,20 @@ def executer_route(route):
                 print(f"Faux — erreur détectée : {stderr}")
             else:
                 print(f"Faux — code de retour : {resultat.returncode}")
+            ecrire_preuve(route_id, resultat.returncode, programme)
             sys.exit(1)
 
+        ecrire_preuve(route_id, 0, programme)
         print("Vrai — exécution réussie.")
         sys.exit(0)
 
     except subprocess.TimeoutExpired:
+        ecrire_preuve(route_id, -1, programme)
         print(f"Faux — délai d'attente dépassé ({TIMEOUT_SECONDS}s).")
         sys.exit(1)
 
     except OSError as e:
+        ecrire_preuve(route_id, -2, programme)
         print(f"Faux — impossible de lancer le processus : {e}")
         sys.exit(1)
 

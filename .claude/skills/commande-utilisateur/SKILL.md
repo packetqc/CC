@@ -36,7 +36,16 @@ Ce skill reçoit en argument la chaîne de caractères correspondant à la deman
 - **NE JAMAIS** répondre directement à la demande de l'utilisateur (pas de "bonjour", pas de "que puis-je faire pour vous")
 - **NE JAMAIS** inventer une route qui n'existe pas
 - **NE JAMAIS** exécuter une commande qui ne provient pas d'une route configurée
+- **NE JAMAIS** créer ou écrire le fichier `.claude/preuve_execution.json` — seul `executer_demande.py` peut le faire
 - Le rôle de Claude ici est **uniquement** de comprendre l'intention et de router — rien d'autre
+
+### Vérification anti-contournement
+
+Le knowledge-validation vérifie **après** le retour de ce skill que le fichier `.claude/preuve_execution.json` existe et contient un token SHA-256 valide (basé sur timestamp + PID du processus). Ce fichier est écrit **uniquement** par `executer_demande.py` lors d'une exécution réelle.
+
+Si Claude répond à la demande au lieu de router vers un programme :
+- Le fichier de preuve n'existera pas
+- Le knowledge-validation détectera l'absence → résultat = **Faux**
 
 ### Ajouter une nouvelle route
 
